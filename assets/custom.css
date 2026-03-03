@@ -1,46 +1,54 @@
+﻿:root {
+    --amazon-orange: #ff9900;
+    --amazon-blue: #146eb4;
+    --ink-dark: #101828;
+    --slate: #475467;
+    --cloud: #f2f4f7;
+    --white: #ffffff;
+}
+
 .main-header {
-    font-size: 3rem;
+    font-size: 2.8rem;
     font-weight: 900;
-    background: linear-gradient(90deg, #FF9900, #146EB4);
+    margin-bottom: 0.1rem;
+    background: linear-gradient(90deg, var(--amazon-orange), var(--amazon-blue));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    margin-bottom: 0;
 }
+
 .sub-header {
-    font-size: 1.2rem;
-    color: #666;
-    margin-top: -10px;
-    margin-bottom: 30px;
+    color: var(--slate);
+    font-size: 1.08rem;
+    margin-top: 0.2rem;
+    margin-bottom: 1.2rem;
 }
-.metric-card {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    padding: 20px;
-    border-radius: 15px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-    color: white;
+
+[data-testid="stMetric"] {
+    background: linear-gradient(165deg, var(--white), var(--cloud));
+    border: 1px solid #e4e7ec;
+    border-radius: 12px;
+    padding: 0.5rem;
+    box-shadow: 0 1px 8px rgba(16, 24, 40, 0.08);
 }
-.insight-box {
-    background: rgba(255, 255, 255, 0.1);
-    border-left: 5px solid #FF9900;
-    padding: 15px;
-    border-radius: 10px;
-    margin: 20px 0;
-    backdrop-filter: blur(10px);
-}
+
 .stTabs [data-baseweb="tab-list"] {
-    gap: 24px;
+    gap: 14px;
 }
+
 .stTabs [data-baseweb="tab"] {
-    height: 50px;
-    white-space: pre-wrap;
-    background-color: transparent;
     border-radius: 10px 10px 0 0;
-    gap: 10px;
-    padding-top: 10px;
-    padding-bottom: 10px;
     font-weight: 600;
 }
+
 .stTabs [aria-selected="true"] {
-    background-color: #FF9900;
+    background-color: var(--amazon-orange);
     color: white !important;
+}
+
+[data-testid="stSidebar"] {
+    border-right: 1px solid #e4e7ec;
+}
+
+[data-testid="stSidebar"] h3 {
+    margin-top: 0.2rem;
 }
