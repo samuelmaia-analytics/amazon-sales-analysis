@@ -1,148 +1,129 @@
-﻿# Amazon Sales Analysis
+﻿# Amazon Sales Analytics | Business Impact Portfolio
 
-Dashboard estrategico para analise de vendas da Amazon, com pipeline de dados em Python e aplicacao interativa em Streamlit.
+## Executive Summary
+The project addresses a strategic revenue efficiency problem: high discount leakage reduces net sales performance even when order volume is strong.
 
-[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://amazon-sales-analysis-samuelmaia-data-analyst.streamlit.app)
-![Python](https://img.shields.io/badge/Python-3.13-blue)
-![Pandas](https://img.shields.io/badge/Pandas-2.0+-brightgreen)
-![Streamlit](https://img.shields.io/badge/Streamlit-1.28+-red)
-![Plotly](https://img.shields.io/badge/Plotly-5.14+-orange)
+For commercial leadership (Head of Sales, Revenue Operations, Category Managers), this solution delivers a reproducible analytics pipeline and an executive dashboard to prioritize margin-preserving growth.
 
-## Sumario
+North Star Metric: **Net Revenue Retained (NRR)** = `net revenue / gross revenue before discounts`.
 
-- [1. Objetivo](#1-objetivo)
-- [2. Funcionalidades](#2-funcionalidades)
-- [3. Arquitetura](#3-arquitetura)
-- [4. Estrutura do repositorio](#4-estrutura-do-repositorio)
-- [5. Como executar localmente](#5-como-executar-localmente)
-- [6. Pipeline de dados](#6-pipeline-de-dados)
-- [7. Testes](#7-testes)
-- [8. Deploy](#8-deploy)
-- [9. Contato](#9-contato)
+Current baseline from the processed dataset:
+- Total net revenue: **$32.87M**
+- Discount leakage: **$5.05M**
+- Net Revenue Retained: **86.69%**
+- Expected uplift with 5% leakage recovery: **$252.3K**
 
-## 1. Objetivo
+Business framing example: **Recovering only 5% of discount leakage can add ~$252K without increasing acquisition spend.**
 
-Transformar dados brutos de vendas em insights acionaveis para tomada de decisao, cobrindo:
+## Business Problem
+Amazon marketplace-style operations often optimize for volume but lose value through uncontrolled discounting.
 
-- ingestao de dados;
-- limpeza e padronizacao;
-- analise exploratoria;
-- dashboard executivo interativo.
+This project answers:
+- Where are discounts eroding revenue most?
+- Which categories create the largest recoverable value?
+- What is the financial upside of tighter discount governance?
 
-## 2. Funcionalidades
+## Dataset
+- Source: Kaggle (`aliiihussain/amazon-sales-dataset`)
+- Link: https://www.kaggle.com/datasets/aliiihussain/amazon-sales-dataset
+- Scope: 50,000 transactions
+- Main entities: order, product category, price, discount, region, payment method, rating
 
-O dashboard possui 4 abas principais:
+## Methodology
+1. Data ingestion with fallback logic for local execution.
+2. Data quality enforcement (schema checks, domain clipping, invalid-row removal).
+3. Feature engineering for business metrics (`gross_revenue`, `discount_value`, `NRR`).
+4. Opportunity ranking by category-level discount leakage.
+5. Executive dashboards and artifacts for decision support.
 
-- **Visao Geral**: KPIs, distribuicao de receita por regiao e pagamento, evolucao diaria.
-- **Analise Financeira**: heatmap de receita, impacto de desconto, top produtos.
-- **Performance de Produtos**: matriz por categoria e tabela consolidada.
-- **Insights Estrategicos**: resumo de descobertas e tendencia mensal.
-
-## 3. Arquitetura
-
-Camadas da solucao:
-
-1. **Ingestao**: `src/data_ingestion.py`
-2. **Processamento**: `src/data_preprocessing.py`
-3. **Analise**: `src/eda.py`
-4. **Visualizacao**: `src/visualization.py` e `streamlit_app.py`
-
-## 4. Estrutura do repositorio
-
+## Architecture
 ```text
 amazon-sales-analysis/
+|-- app/
+|   `-- streamlit_app.py
 |-- assets/
+|   |-- amazon_logo.svg
 |   `-- custom.css
 |-- data/
 |   |-- raw/
 |   `-- processed/
-|       `-- amazon_sales_clean.csv
+|-- docs/
+|   |-- README.en.md
+|   `-- README.pt-BR.md
 |-- notebooks/
 |-- reports/
-|-- src/
+|   |-- figures/
+|   `-- tables/
+|-- scripts/
+|   `-- run_pipeline.py
+|-- src/amazon_sales_analysis/
+|   |-- analytics.py
 |   |-- config.py
 |   |-- data_ingestion.py
 |   |-- data_preprocessing.py
 |   |-- eda.py
+|   |-- evaluation.py
+|   |-- feature_engineering.py
+|   |-- logging_config.py
 |   |-- modeling.py
 |   `-- visualization.py
 |-- tests/
-|   |-- test_data_preprocessing.py
-|   `-- test_data_quality.py
 |-- main.py
+|-- pyproject.toml
 |-- requirements.txt
-|-- streamlit_app.py
-`-- README.md
+`-- Dockerfile
 ```
 
-## 5. Como executar localmente
+## Results
+- Net revenue retained: **86.69%** (baseline)
+- Discount leakage identified: **$5.05M**
+- Highest-revenue category: **Beauty ($5.55M)**
+- Prioritized category opportunities exported to `reports/tables/discount_opportunities.csv`
 
-### Pre-requisitos
+## Business Impact
+- 5% recovery scenario: **+$252.3K** net revenue
+- 10% recovery scenario: **+$504.7K** net revenue
+- Decision impact: supports discount policy redesign by category and promotional channel
 
-- Python 3.13+
-- Git
+## Business Recommendations
+- Cap discount depth for high-leakage categories and monitor weekly NRR.
+- Shift campaign strategy from blanket discounts to category-specific thresholds.
+- Track `discount_to_revenue_ratio` as a governance KPI in leadership reviews.
+- Pilot policy in top 3 leakage categories before full rollout.
 
-### Passo a passo
+## Tech Stack
+Python, Pandas, Plotly, Streamlit, Seaborn, Matplotlib, Pytest.
 
+## How to Run
+### Local
 ```bash
 git clone https://github.com/samuelmaia-data-analyst/amazon-sales-analysis.git
 cd amazon-sales-analysis
-
-python -m venv .venv
-# Linux/macOS
-source .venv/bin/activate
-# Windows (PowerShell)
-# .venv\Scripts\Activate.ps1
-
 pip install -r requirements.txt
-```
-
-Executar dashboard:
-
-```bash
-streamlit run streamlit_app.py
-```
-
-## 6. Pipeline de dados
-
-Para baixar/processar os dados novamente:
-
-```bash
 python main.py
+streamlit run app/streamlit_app.py
 ```
 
-Saida esperada:
-
-- `data/processed/amazon_sales_clean.csv`
-- figuras em `reports/figures/`
-
-Observacao: `main.py` usa `kagglehub`. Garanta autenticacao valida da Kaggle no ambiente local.
-
-## 7. Testes
-
-Executar suite:
-
+### Docker
 ```bash
-pytest tests/ -v
+docker build -t amazon-sales-analytics .
+docker run --rm -p 8501:8501 amazon-sales-analytics
 ```
 
-Cobertura atual inclui:
+## Future Improvements
+- Add scenario simulator for category discount policy changes.
+- Deploy CI pipeline (tests + lint + docs checks).
+- Add anomaly detection on discount spikes.
+- Expose metrics through a FastAPI endpoint for BI integration.
 
-- validacao de colunas obrigatorias no preprocessing;
-- clipping de limites de dominio (`discount_percent`, `rating`);
-- consistencia de calculo de `discounted_price` e `total_revenue`;
-- validacao basica de qualidade do dataset processado.
+## Versioning Convention
+Use semantic commit messages:
+- `feat: add feature engineering pipeline`
+- `fix: correct discount leakage calculation`
+- `docs: improve executive summary for international recruiters`
 
-## 8. Deploy
-
-Aplicacao publicada no Streamlit Cloud:
-
-- https://amazon-sales-analysis-samuelmaia-data-analyst.streamlit.app
-
-## 9. Contato
-
-Desenvolvido por Samuel Maia.
-
+## Author
+Samuel Maia
 - GitHub: https://github.com/samuelmaia-data-analyst
 - LinkedIn: https://linkedin.com/in/samuelmaia-data-analyst
 - Email: smaia2@gmail.com
