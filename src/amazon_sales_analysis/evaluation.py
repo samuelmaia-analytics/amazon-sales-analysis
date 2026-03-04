@@ -3,7 +3,11 @@
 
 def calculate_business_impact(df: pd.DataFrame, recovery_rate: float = 0.05) -> dict[str, float]:
     total_revenue = float(df["total_revenue"].sum())
-    gross_revenue = float(df["gross_revenue"].sum()) if "gross_revenue" in df else float((df["price"] * df["quantity_sold"]).sum())
+    gross_revenue = (
+        float(df["gross_revenue"].sum())
+        if "gross_revenue" in df
+        else float((df["price"] * df["quantity_sold"]).sum())
+    )
 
     discount_leakage = gross_revenue - total_revenue
     expected_uplift = discount_leakage * recovery_rate

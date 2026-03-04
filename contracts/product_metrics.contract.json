@@ -1,0 +1,17 @@
+{
+  "metrics_version": "1.0.0",
+  "required_fields": [
+    "contract_version",
+    "generated_at_utc",
+    "gross_revenue",
+    "north_star_nrr",
+    "period_end",
+    "period_start",
+    "raw_row_count",
+    "clean_row_count",
+    "row_retention_rate",
+    "rows_dropped",
+    "total_revenue"
+  ],
+  "description": "Product metrics output contract generated at reports/metrics/product_metrics.json."
+}

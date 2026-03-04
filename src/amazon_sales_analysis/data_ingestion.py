@@ -1,8 +1,7 @@
-﻿from pathlib import Path
-import shutil
+﻿import shutil
+from pathlib import Path
 
 from .config import KAGGLE_DATASET, RAW_DATA_DIR
-
 
 RAW_SUBDIR = "amazon_sales"
 RAW_FILENAME = "amazon_sales_dataset.csv"

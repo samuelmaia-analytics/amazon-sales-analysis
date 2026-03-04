@@ -27,6 +27,9 @@
 - [Architecture](#architecture)
 - [How to Run](#how-to-run)
 - [Docker](#docker)
+- [Quality and Contracts](#quality-and-contracts)
+- [CI and Product Metrics](#ci-and-product-metrics)
+- [Release Process](#release-process)
 - [Contact](#contact)
 
 ## Executive Summary
@@ -82,6 +85,44 @@ streamlit run app/streamlit_app.py
 docker build -t amazon-sales-analytics .
 docker run --rm -p 8501:8501 amazon-sales-analytics
 ```
+
+## Quality and Contracts
+- Raw contract: `contracts/sales_dataset.contract.json`
+- Product metrics contract: `contracts/product_metrics.contract.json`
+- Pipeline gates:
+  - raw schema contract enforcement
+  - clean-data quality checks
+  - metrics generation in `reports/metrics/product_metrics.json`
+
+### Local Quality Commands
+```bash
+pip install -r requirements-dev.txt
+black --check .
+isort --check-only .
+ruff check .
+mypy src scripts
+pytest
+```
+
+## CI and Product Metrics
+- CI workflow: `.github/workflows/ci.yml`
+- Gates: format, lint, typing, tests, coverage (`>=70%`)
+- Exported CI artifacts:
+  - `reports/metrics/coverage.xml`
+  - `reports/metrics/pytest-results.xml`
+
+## Release Process
+1. Add release entry in `CHANGELOG.md`.
+2. Bump version:
+   ```bash
+   python scripts/bump_version.py 0.2.0
+   ```
+3. Tag and push:
+   ```bash
+   git tag v0.2.0
+   git push origin main --tags
+   ```
+4. Release workflow (`.github/workflows/release.yml`) validates tag/version/changelog consistency.
 
 ## Contact
 - GitHub: https://github.com/samuelmaia-data-analyst

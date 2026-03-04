@@ -1,0 +1,65 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  validate-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Validate version consistency
+        shell: bash
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          PYPROJECT_VERSION=$(python - <<'PY'
+          import pathlib, re
+          content = pathlib.Path("pyproject.toml").read_text(encoding="utf-8")
+          print(re.search(r'^version = "(.*)"$', content, re.MULTILINE).group(1))
+          PY
+          )
+          INIT_VERSION=$(python - <<'PY'
+          import pathlib, re
+          content = pathlib.Path("src/amazon_sales_analysis/__init__.py").read_text(encoding="utf-8")
+          print(re.search(r'^__version__ = "(.*)"$', content, re.MULTILINE).group(1))
+          PY
+          )
+          test "$TAG_VERSION" = "$PYPROJECT_VERSION"
+          test "$TAG_VERSION" = "$INIT_VERSION"
+
+      - name: Validate changelog entry
+        shell: bash
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          grep -q "## \[$TAG_VERSION\]" CHANGELOG.md
+
+      - name: Run quality gate
+        run: |
+          black --check .
+          isort --check-only .
+          ruff check .
+          mypy src scripts
+          pytest
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true

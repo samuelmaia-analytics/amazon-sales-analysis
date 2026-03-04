@@ -1,5 +1,5 @@
-from pathlib import Path
 import sys
+from pathlib import Path
 
 import pandas as pd
 import plotly.express as px
@@ -97,8 +97,14 @@ def render_kpis(df_filtered: pd.DataFrame, df_all: pd.DataFrame) -> None:
     kpis = summarize_kpis(df_filtered)
     baseline = summarize_kpis(df_all)
 
-    coverage = (kpis["total_revenue"] / baseline["total_revenue"] * 100) if baseline["total_revenue"] else 0
-    order_share = (kpis["total_orders"] / baseline["total_orders"] * 100) if baseline["total_orders"] else 0
+    coverage = (
+        (kpis["total_revenue"] / baseline["total_revenue"] * 100)
+        if baseline["total_revenue"]
+        else 0
+    )
+    order_share = (
+        (kpis["total_orders"] / baseline["total_orders"] * 100) if baseline["total_orders"] else 0
+    )
 
     col1, col2, col3, col4, col5, col6 = st.columns(6)
     col1.metric("Receita Total", f"${kpis['total_revenue']:,.0f}", f"{coverage:.1f}% do total")
@@ -162,14 +168,12 @@ def render_exec_dashboard(df: pd.DataFrame) -> None:
 
 def render_recruiter_section(df: pd.DataFrame) -> None:
     st.subheader("Sinais de Senioridade Tecnica")
-    st.markdown(
-        """
+    st.markdown("""
 - Arquitetura orientada a dominio (`src/amazon_sales_analysis`) com separacao clara de responsabilidades.
 - Pipeline executavel por script, com fallback para ambiente sem `kagglehub`.
 - Padrao de qualidade com testes automatizados para regras de limpeza e dominio.
 - Dashboard orientado a decisao: KPI, segmentacao, tendencia e leitura executiva.
-        """
-    )
+        """)
 
     top_categories = (
         df.groupby("product_category", as_index=False)["total_revenue"]
@@ -257,7 +261,12 @@ def main() -> None:
     render_kpis(filtered_df, df_all)
 
     tab1, tab2, tab3, tab4 = st.tabs(
-        ["Dashboard Executivo", "Perfil para Recrutadores", "Qualidade dos Dados", "Tabelas Executivas"]
+        [
+            "Dashboard Executivo",
+            "Perfil para Recrutadores",
+            "Qualidade dos Dados",
+            "Tabelas Executivas",
+        ]
     )
     with tab1:
         render_exec_dashboard(filtered_df)

@@ -11,7 +11,11 @@ def summarize_kpis(df: pd.DataFrame) -> dict[str, float]:
     orders = float(df["order_id"].nunique()) if not df.empty else 0.0
     revenue = float(df["total_revenue"].sum())
     units = float(df["quantity_sold"].sum())
-    gross_revenue = float(df["gross_revenue"].sum()) if "gross_revenue" in df else float((df["price"] * df["quantity_sold"]).sum())
+    gross_revenue = (
+        float(df["gross_revenue"].sum())
+        if "gross_revenue" in df
+        else float((df["price"] * df["quantity_sold"]).sum())
+    )
 
     return {
         "total_revenue": revenue,

@@ -1,0 +1,19 @@
+{
+  "contract_version": "1.0.0",
+  "required_columns": [
+    "customer_region",
+    "discount_percent",
+    "discounted_price",
+    "order_date",
+    "order_id",
+    "payment_method",
+    "price",
+    "product_category",
+    "product_id",
+    "quantity_sold",
+    "rating",
+    "review_count",
+    "total_revenue"
+  ],
+  "description": "Raw sales dataset contract expected by preprocessing pipeline."
+}

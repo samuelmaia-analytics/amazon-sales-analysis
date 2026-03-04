@@ -3,26 +3,11 @@
 import pandas as pd
 
 from .config import PROCESSED_DATA_DIR, RAW_DATA_DIR
+from .contracts import RAW_REQUIRED_COLUMNS
 
 RAW_SUBDIR = "amazon_sales"
 RAW_FILENAME = "amazon_sales_dataset.csv"
 PROCESSED_FILENAME = "amazon_sales_clean.csv"
-
-REQUIRED_COLUMNS = {
-    "order_id",
-    "order_date",
-    "product_id",
-    "product_category",
-    "price",
-    "discount_percent",
-    "quantity_sold",
-    "customer_region",
-    "payment_method",
-    "rating",
-    "review_count",
-    "discounted_price",
-    "total_revenue",
-}
 
 
 def load_raw_sales_data(raw_subdir: str = RAW_SUBDIR, filename: str = RAW_FILENAME) -> pd.DataFrame:
@@ -33,7 +18,7 @@ def load_raw_sales_data(raw_subdir: str = RAW_SUBDIR, filename: str = RAW_FILENA
 
 
 def clean_sales_data(df: pd.DataFrame) -> pd.DataFrame:
-    missing_columns = REQUIRED_COLUMNS - set(df.columns)
+    missing_columns = RAW_REQUIRED_COLUMNS - set(df.columns)
     if missing_columns:
         missing = ", ".join(sorted(missing_columns))
         raise ValueError(f"Colunas obrigatorias ausentes no dataset: {missing}")

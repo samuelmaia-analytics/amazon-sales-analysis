@@ -1,21 +1,30 @@
-﻿from pathlib import Path
-import logging
+﻿import logging
 import sys
+from pathlib import Path
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT_DIR / "src"))
 
+from amazon_sales_analysis.config import TABLES_DIR
+from amazon_sales_analysis.contracts import enforce_raw_contract, export_contract_snapshot
 from amazon_sales_analysis.data_ingestion import download_amazon_sales_dataset
-from amazon_sales_analysis.data_preprocessing import clean_sales_data, load_raw_sales_data, save_processed_data
+from amazon_sales_analysis.data_preprocessing import (
+    clean_sales_data,
+    load_raw_sales_data,
+    save_processed_data,
+)
 from amazon_sales_analysis.decision_engine import build_actionable_recommendations
 from amazon_sales_analysis.eda import basic_eda
 from amazon_sales_analysis.evaluation import build_executive_summary
 from amazon_sales_analysis.feature_engineering import build_features
 from amazon_sales_analysis.logging_config import configure_logging
+from amazon_sales_analysis.metrics import collect_product_metrics, save_product_metrics
 from amazon_sales_analysis.modeling import rank_discount_opportunities
+from amazon_sales_analysis.quality import enforce_clean_quality_gates
 from amazon_sales_analysis.table_organization import build_executive_tables
 from amazon_sales_analysis.visualization import sales_trend_over_time, top_categories_by_sales
-from amazon_sales_analysis.config import TABLES_DIR
+
+CONTRACT_VERSION = "1.0.0"
 
 
 def main() -> None:
@@ -27,9 +36,13 @@ def main() -> None:
 
     logger.info("[2/7] Loading raw data")
     raw_df = load_raw_sales_data()
+    enforce_raw_contract(raw_df)
+    contract_path = export_contract_snapshot(contract_version=CONTRACT_VERSION)
+    logger.info("Data contract snapshot saved to: %s", contract_path)
 
     logger.info("[3/7] Cleaning dataset")
     clean_df = clean_sales_data(raw_df)
+    enforce_clean_quality_gates(clean_df)
     output_path = save_processed_data(clean_df)
     logger.info("Processed dataset saved to: %s", output_path)
 
@@ -61,6 +74,15 @@ def main() -> None:
     logger.info("Executive summary saved to: %s", executive_path)
     logger.info("Opportunities table saved to: %s", opportunities_path)
     logger.info("Actionable recommendations saved to: %s", recommendations_path)
+    metrics_payload = collect_product_metrics(
+        raw_df,
+        clean_df,
+        featured_df,
+        contract_version=CONTRACT_VERSION,
+    )
+    metrics_path = save_product_metrics(metrics_payload)
+    logger.info("Product metrics saved to: %s", metrics_path)
+
     logger.info("[7/7] Pipeline completed successfully")
 
 

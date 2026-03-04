@@ -1,11 +1,35 @@
+[project]
+name = "amazon-sales-analysis"
+version = "0.1.0"
+description = "Business-focused sales analytics pipeline with quality gates and executive metrics."
+requires-python = ">=3.12"
+
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
-addopts = "-q"
+addopts = "-q --cov=src/amazon_sales_analysis --cov-report=term-missing --cov-fail-under=70"
 
 [tool.black]
 line-length = 100
+target-version = ["py312"]
 
 [tool.isort]
 profile = "black"
 line_length = 100
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests", "scripts"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["E402", "E501"]
+
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+strict_optional = true
+exclude = ["^\\.venv/"]

@@ -27,6 +27,9 @@
 - [Business Recommendations](#business-recommendations)
 - [Tech Stack](#tech-stack)
 - [How to Run](#how-to-run)
+- [Quality and Contracts](#quality-and-contracts)
+- [CI and Metrics](#ci-and-metrics)
+- [Release Process](#release-process)
 - [Future Improvements](#future-improvements)
 - [Versioning Convention](#versioning-convention)
 - [Author](#author)
@@ -141,9 +144,48 @@ docker build -t amazon-sales-analytics .
 docker run --rm -p 8501:8501 amazon-sales-analytics
 ```
 
+## Quality and Contracts
+- Raw data contract is versioned at `contracts/sales_dataset.contract.json`.
+- Product metrics contract is versioned at `contracts/product_metrics.contract.json`.
+- Pipeline enforces:
+  - required schema on raw data
+  - clean-data quality gates (domain and invalid-value checks)
+  - product metrics generation in `reports/metrics/product_metrics.json`
+
+### Local Quality Commands
+```bash
+pip install -r requirements-dev.txt
+black --check .
+isort --check-only .
+ruff check .
+mypy src scripts
+pytest
+```
+
+## CI and Metrics
+- CI workflow: `.github/workflows/ci.yml`
+- Gates: formatting, lint, type checking, tests and coverage threshold (`>=70%`).
+- CI artifacts exported in `reports/metrics/`:
+  - `pytest-results.xml`
+  - `coverage.xml`
+
+## Release Process
+1. Update changelog with a new section in `CHANGELOG.md` (format `## [x.y.z] - YYYY-MM-DD`).
+2. Bump package version:
+   ```bash
+   python scripts/bump_version.py 0.2.0
+   ```
+3. Commit, tag and push:
+   ```bash
+   git add .
+   git commit -m "chore(release): v0.2.0"
+   git tag v0.2.0
+   git push origin main --tags
+   ```
+4. The release workflow validates version/changelog consistency and publishes GitHub release.
+
 ## Future Improvements
 - Add scenario simulator for category discount policy changes.
-- Deploy CI pipeline (tests + lint + docs checks).
 - Add anomaly detection on discount spikes.
 - Expose metrics through a FastAPI endpoint for BI integration.
 

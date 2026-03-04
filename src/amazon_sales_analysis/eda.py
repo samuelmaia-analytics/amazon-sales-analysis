@@ -7,7 +7,7 @@ from .config import FIGURES_DIR
 
 def basic_eda(df: pd.DataFrame) -> None:
     print("==== DataFrame Info ====")
-    print(df.info())
+    df.info()
     print("\n==== Numeric Describe ====")
     print(df.describe())
 

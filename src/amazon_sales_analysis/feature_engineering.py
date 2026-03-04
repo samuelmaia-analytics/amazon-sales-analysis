@@ -14,8 +14,8 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
 
     frame["gross_revenue"] = frame["price"] * frame["quantity_sold"]
     frame["discount_value"] = frame["gross_revenue"] - frame["total_revenue"]
-    frame["net_revenue_retained"] = (
-        frame["total_revenue"] / frame["gross_revenue"].replace(0, pd.NA)
+    frame["net_revenue_retained"] = frame["total_revenue"] / frame["gross_revenue"].replace(
+        0, pd.NA
     )
 
     frame["revenue_per_unit"] = frame["total_revenue"] / frame["quantity_sold"].replace(0, pd.NA)
@@ -23,4 +23,6 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
         frame["discount_value"] / frame["gross_revenue"].replace(0, pd.NA)
     ) * 100
 
-    return frame.fillna({"revenue_per_unit": 0, "discount_impact_pct": 0, "net_revenue_retained": 0})
+    return frame.fillna(
+        {"revenue_per_unit": 0, "discount_impact_pct": 0, "net_revenue_retained": 0}
+    )

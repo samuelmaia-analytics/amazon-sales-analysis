@@ -12,8 +12,12 @@ def build_actionable_recommendations(df: pd.DataFrame) -> pd.DataFrame:
         .agg(discount_value=("discount_value", "sum"), total_revenue=("total_revenue", "sum"))
         .sort_values("discount_value", ascending=False)
     )
-    top_category = category_leakage.iloc[0]["product_category"] if not category_leakage.empty else "N/A"
-    top_category_leakage = float(category_leakage.iloc[0]["discount_value"]) if not category_leakage.empty else 0.0
+    top_category = (
+        category_leakage.iloc[0]["product_category"] if not category_leakage.empty else "N/A"
+    )
+    top_category_leakage = (
+        float(category_leakage.iloc[0]["discount_value"]) if not category_leakage.empty else 0.0
+    )
 
     recs: list[dict[str, str | float]] = []
 
@@ -68,6 +72,6 @@ def build_actionable_recommendations(df: pd.DataFrame) -> pd.DataFrame:
         )
 
     recommendations = pd.DataFrame(recs)
-    return recommendations.sort_values(by=["priority", "expected_impact_usd"], ascending=[True, False]).reset_index(
-        drop=True
-    )
+    return recommendations.sort_values(
+        by=["priority", "expected_impact_usd"], ascending=[True, False]
+    ).reset_index(drop=True)

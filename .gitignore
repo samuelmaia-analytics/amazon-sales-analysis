@@ -23,6 +23,7 @@ data/external/
 # Generated reports
 reports/figures/
 reports/tables/
+reports/metrics/
 
 # OS files
 .DS_Store
