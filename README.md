@@ -2,7 +2,7 @@
 
 ## Language
 - English: [docs/README.en.md](docs/README.en.md)
-- Portugues (BR): [docs/README.pt-BR.md](docs/README.pt-BR.md)
+- Português (BR): [docs/README.pt-BR.md](docs/README.pt-BR.md)
 
 ## Summary
 - Business problem: revenue leakage from discount strategy.

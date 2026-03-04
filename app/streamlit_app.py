@@ -32,7 +32,7 @@ if ASSETS_CSS.exists():
 def load_processed_data() -> pd.DataFrame:
     if not DATASET_PATH.exists():
         raise FileNotFoundError(
-            "Dataset processado nao encontrado. Execute: python scripts/run_pipeline.py"
+            "Dataset processado não encontrado. Execute: python scripts/run_pipeline.py"
         )
     frame = pd.read_csv(DATASET_PATH, parse_dates=["order_date"])
     return add_derived_metrics(frame)
@@ -48,7 +48,7 @@ def render_logo() -> None:
 def render_header() -> None:
     st.markdown('<h1 class="main-header">Amazon Sales Analytics</h1>', unsafe_allow_html=True)
     st.markdown(
-        '<p class="sub-header">Portfolio de dados com foco executivo: pipeline reproduzivel, qualidade e impacto de negocio.</p>',
+        '<p class="sub-header">Portfólio de dados com foco executivo: pipeline reproduzível, qualidade e impacto de negócio.</p>',
         unsafe_allow_html=True,
     )
 
@@ -61,7 +61,7 @@ def render_sidebar(df: pd.DataFrame) -> pd.DataFrame:
         start_default = df["order_date"].min().date()
         end_default = df["order_date"].max().date()
         date_range = st.date_input(
-            "Periodo",
+            "Período",
             value=(start_default, end_default),
             min_value=start_default,
             max_value=end_default,
@@ -75,12 +75,12 @@ def render_sidebar(df: pd.DataFrame) -> pd.DataFrame:
         categories = ["All"] + sorted(df["product_category"].dropna().unique().tolist())
         payment_methods = ["All"] + sorted(df["payment_method"].dropna().unique().tolist())
 
-        selected_region = st.selectbox("Regiao", regions)
+        selected_region = st.selectbox("Região", regions)
         selected_category = st.selectbox("Categoria", categories)
         selected_payment = st.selectbox("Pagamento", payment_methods)
 
         st.markdown("---")
-        st.caption(f"Range: {start_date} ate {end_date}")
+        st.caption(f"Range: {start_date} até {end_date}")
 
     filtered = df[(df["order_date"].dt.date >= start_date) & (df["order_date"].dt.date <= end_date)]
     if selected_region != "All":
@@ -110,8 +110,8 @@ def render_kpis(df_filtered: pd.DataFrame, df_all: pd.DataFrame) -> None:
     col1.metric("Receita Total", f"${kpis['total_revenue']:,.0f}", f"{coverage:.1f}% do total")
     col2.metric("Pedidos", f"{kpis['total_orders']:,.0f}", f"{order_share:.1f}% do total")
     col3.metric("Unidades", f"{kpis['total_units']:,.0f}")
-    col4.metric("Ticket Medio", f"${kpis['avg_ticket']:,.2f}")
-    col5.metric("Rating Medio", f"{kpis['avg_rating']:.2f}")
+    col4.metric("Ticket Médio", f"${kpis['avg_ticket']:,.2f}")
+    col5.metric("Rating Médio", f"{kpis['avg_rating']:.2f}")
     col6.metric("North Star NRR", f"{kpis['net_revenue_retained'] * 100:.2f}%")
 
 
@@ -130,7 +130,7 @@ def render_exec_dashboard(df: pd.DataFrame) -> None:
             region_revenue,
             values="total_revenue",
             names="customer_region",
-            title="Receita por Regiao",
+            title="Receita por Região",
             hole=0.48,
         )
         fig.update_layout(margin=dict(l=10, r=10, t=50, b=10))
@@ -141,7 +141,7 @@ def render_exec_dashboard(df: pd.DataFrame) -> None:
             payment_revenue,
             x="payment_method",
             y="total_revenue",
-            title="Receita por Metodo de Pagamento",
+            title="Receita por Método de Pagamento",
             color="total_revenue",
             color_continuous_scale="blues",
         )
@@ -160,19 +160,19 @@ def render_exec_dashboard(df: pd.DataFrame) -> None:
         x="order_date",
         y="total_revenue",
         markers=True,
-        title="Tendencia Mensal de Receita",
+        title="Tendência Mensal de Receita",
     )
     trend.update_layout(margin=dict(l=10, r=10, t=50, b=10))
     st.plotly_chart(trend, use_container_width=True)
 
 
 def render_recruiter_section(df: pd.DataFrame) -> None:
-    st.subheader("Sinais de Senioridade Tecnica")
+    st.subheader("Sinais de Senioridade Técnica")
     st.markdown("""
-- Arquitetura orientada a dominio (`src/amazon_sales_analysis`) com separacao clara de responsabilidades.
-- Pipeline executavel por script, com fallback para ambiente sem `kagglehub`.
-- Padrao de qualidade com testes automatizados para regras de limpeza e dominio.
-- Dashboard orientado a decisao: KPI, segmentacao, tendencia e leitura executiva.
+- Arquitetura orientada a domínio (`src/amazon_sales_analysis`) com separação clara de responsabilidades.
+- Pipeline executável por script, com fallback para ambiente sem `kagglehub`.
+- Padrão de qualidade com testes automatizados para regras de limpeza e domínio.
+- Dashboard orientado a decisão: KPI, segmentação, tendência e leitura executiva.
         """)
 
     top_categories = (
@@ -193,7 +193,7 @@ def render_recruiter_section(df: pd.DataFrame) -> None:
     fig.update_layout(margin=dict(l=10, r=10, t=50, b=10), coloraxis_showscale=False)
     st.plotly_chart(fig, use_container_width=True)
 
-    st.subheader("Camada de Decisao Acionavel")
+    st.subheader("Camada de Decisão Acionável")
     recommendations = build_actionable_recommendations(df)
     st.dataframe(recommendations, use_container_width=True, hide_index=True)
 

@@ -38,7 +38,7 @@ def validate_raw_contract(df: pd.DataFrame) -> DataContractResult:
         missing = ", ".join(sorted(missing_columns))
         errors.append(f"Colunas obrigatorias ausentes no dataset: {missing}")
     if df.empty:
-        errors.append("Dataset bruto nao pode ser vazio.")
+        errors.append("Dataset bruto não pode ser vazio.")
 
     return DataContractResult(is_valid=not errors, errors=errors)
 

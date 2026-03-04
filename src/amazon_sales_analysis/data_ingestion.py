@@ -17,10 +17,10 @@ def download_amazon_sales_dataset() -> Path:
         import kagglehub
     except ImportError as exc:
         if existing_dataset.exists():
-            print(f"kagglehub nao instalado. Usando dataset local existente em: {existing_dataset}")
+            print(f"kagglehub não instalado. Usando dataset local existente em: {existing_dataset}")
             return target_dir
         raise ImportError(
-            "kagglehub nao instalado e nao existe dataset local em data/raw. "
+            "kagglehub não instalado e não existe dataset local em data/raw. "
             "Execute: pip install kagglehub"
         ) from exc
 

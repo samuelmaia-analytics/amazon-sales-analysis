@@ -13,7 +13,7 @@ PROCESSED_FILENAME = "amazon_sales_clean.csv"
 def load_raw_sales_data(raw_subdir: str = RAW_SUBDIR, filename: str = RAW_FILENAME) -> pd.DataFrame:
     source_path = RAW_DATA_DIR / raw_subdir / filename
     if not source_path.exists():
-        raise FileNotFoundError(f"Arquivo bruto nao encontrado: {source_path}")
+        raise FileNotFoundError(f"Arquivo bruto não encontrado: {source_path}")
     return pd.read_csv(source_path)
 
 
