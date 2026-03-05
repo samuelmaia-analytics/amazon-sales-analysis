@@ -30,6 +30,7 @@
 - [Quality and Contracts](#quality-and-contracts)
 - [CI and Metrics](#ci-and-metrics)
 - [Release Process](#release-process)
+- [Decision Cadence](#decision-cadence)
 - [Future Improvements](#future-improvements)
 - [Versioning Convention](#versioning-convention)
 - [Author](#author)
@@ -74,6 +75,7 @@ This project answers:
 ```text
 amazon-sales-analysis/
 |-- app/
+|   |-- api.py
 |   `-- streamlit_app.py
 |-- assets/
 |   |-- amazon_logo.svg
@@ -92,6 +94,7 @@ amazon-sales-analysis/
 |   `-- run_pipeline.py
 |-- src/amazon_sales_analysis/
 |   |-- analytics.py
+|   |-- anomaly_detection.py
 |   |-- config.py
 |   |-- data_ingestion.py
 |   |-- data_preprocessing.py
@@ -100,6 +103,7 @@ amazon-sales-analysis/
 |   |-- feature_engineering.py
 |   |-- logging_config.py
 |   |-- modeling.py
+|   |-- scenario_simulator.py
 |   `-- visualization.py
 |-- tests/
 |-- main.py
@@ -113,6 +117,7 @@ amazon-sales-analysis/
 - Discount leakage identified: **$5.05M**
 - Highest-revenue category: **Beauty ($5.55M)**
 - Prioritized category opportunities exported to `reports/tables/discount_opportunities.csv`
+- Discount spike anomalies exported to `reports/tables/discount_spike_alerts.csv`
 
 ## Business Impact
 - 5% recovery scenario: **+$252.3K** net revenue
@@ -126,7 +131,7 @@ amazon-sales-analysis/
 - Pilot policy in top 3 leakage categories before full rollout.
 
 ## Tech Stack
-Python, Pandas, Plotly, Streamlit, Seaborn, Matplotlib, Pytest.
+Python, Pandas, Plotly, Streamlit, FastAPI, Seaborn, Matplotlib, Pytest.
 
 ## How to Run
 ### Local
@@ -136,6 +141,7 @@ cd amazon-sales-analysis
 pip install -r requirements.txt
 python main.py
 streamlit run app/streamlit_app.py
+uvicorn app.api:app --reload
 ```
 
 ### Docker
@@ -184,10 +190,13 @@ pytest
    ```
 4. The release workflow validates version/changelog consistency and publishes GitHub release.
 
+## Decision Cadence
+- Weekly: monitor `north_star_nrr` + `discount_leakage` and review anomaly alerts in `reports/tables/discount_spike_alerts.csv`.
+- Monthly: review and recalibrate discount thresholds by category using scenario simulation outputs.
+
 ## Future Improvements
-- Add scenario simulator for category discount policy changes.
-- Add anomaly detection on discount spikes.
-- Expose metrics through a FastAPI endpoint for BI integration.
+- Add model-based threshold recommendations per category (beyond static policy ranges).
+- Add API authentication and rate limiting for production BI integration.
 
 ## Versioning Convention
 Use semantic commit messages:

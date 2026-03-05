@@ -9,7 +9,9 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT_DIR / "src"))
 
 from amazon_sales_analysis.analytics import add_derived_metrics, summarize_kpis
+from amazon_sales_analysis.anomaly_detection import detect_discount_spikes
 from amazon_sales_analysis.decision_engine import build_actionable_recommendations
+from amazon_sales_analysis.scenario_simulator import simulate_leakage_recovery
 from amazon_sales_analysis.table_organization import build_executive_tables
 
 ASSETS_CSS = ROOT_DIR / "assets" / "custom.css"
@@ -70,6 +72,7 @@ I18N = {
         "tab_recruiter": "Perfil para Recrutadores",
         "tab_dq": "Qualidade dos Dados",
         "tab_tables": "Tabelas Executivas",
+        "tab_scenario": "Simulador de Cenarios",
         "kpi_summary": "Resumo de KPIs",
         "category_perf": "Performance por Categoria",
         "regional_perf": "Performance Regional",
@@ -77,6 +80,14 @@ I18N = {
         "trend_table": "Tendência Mensal",
         "dq_audit": "Auditoria de Qualidade",
         "no_records": "Nenhum registro encontrado para os filtros selecionados.",
+        "scenario_title": "Scenario Simulator: Recuperacao de Leakage por Categoria",
+        "scenario_help": "Ajuste os sliders para estimar o upside de receita por categoria.",
+        "sim_uplift": "Upside Simulado",
+        "sim_nrr": "NRR Simulado",
+        "sim_baseline_nrr": "NRR Base",
+        "sim_table": "Breakdown por Categoria",
+        "anomaly_title": "Alertas de Anomalia (Discount Spikes)",
+        "anomaly_empty": "Nenhuma anomalia detectada para o recorte selecionado.",
     },
     "en": {
         "language": "Language",
@@ -120,6 +131,7 @@ I18N = {
         "tab_recruiter": "Recruiter Profile",
         "tab_dq": "Data Quality",
         "tab_tables": "Executive Tables",
+        "tab_scenario": "Scenario Simulator",
         "kpi_summary": "KPI Summary",
         "category_perf": "Category Performance",
         "regional_perf": "Regional Performance",
@@ -127,6 +139,14 @@ I18N = {
         "trend_table": "Monthly Trend",
         "dq_audit": "Data Quality Audit",
         "no_records": "No records found for selected filters.",
+        "scenario_title": "Scenario Simulator: Leakage Recovery by Category",
+        "scenario_help": "Adjust sliders to estimate revenue upside by category.",
+        "sim_uplift": "Simulated Upside",
+        "sim_nrr": "Simulated NRR",
+        "sim_baseline_nrr": "Baseline NRR",
+        "sim_table": "Category Breakdown",
+        "anomaly_title": "Anomaly Alerts (Discount Spikes)",
+        "anomaly_empty": "No anomaly detected for this slice.",
     },
 }
 
@@ -302,6 +322,55 @@ def render_recruiter_section(df: pd.DataFrame, lang: str) -> None:
     recommendations = build_actionable_recommendations(df)
     st.dataframe(recommendations, use_container_width=True, hide_index=True)
 
+    st.subheader(t(lang, "anomaly_title"))
+    anomalies = detect_discount_spikes(df)
+    if anomalies.empty:
+        st.info(t(lang, "anomaly_empty"))
+    else:
+        st.dataframe(anomalies, use_container_width=True, hide_index=True)
+
+
+def render_scenario_simulator(df: pd.DataFrame, lang: str) -> None:
+    st.subheader(t(lang, "scenario_title"))
+    st.caption(t(lang, "scenario_help"))
+
+    categories = sorted(df["product_category"].dropna().unique().tolist())
+    recovery_rates: dict[str, float] = {}
+
+    for category in categories:
+        slider_value = st.slider(
+            f"{category}",
+            min_value=0,
+            max_value=100,
+            value=0,
+            step=1,
+            key=f"recovery_{category}",
+        )
+        recovery_rates[category] = slider_value / 100.0
+
+    simulation = simulate_leakage_recovery(df, recovery_rates)
+    col1, col2, col3 = st.columns(3)
+    col1.metric(t(lang, "sim_uplift"), f"${simulation['total_uplift']:,.0f}")
+    col2.metric(t(lang, "sim_baseline_nrr"), f"{simulation['baseline_nrr'] * 100:.2f}%")
+    col3.metric(t(lang, "sim_nrr"), f"{simulation['simulated_nrr'] * 100:.2f}%")
+
+    breakdown = simulation["category_breakdown"].copy()
+    breakdown["recovery_rate"] = breakdown["recovery_rate"] * 100
+    st.subheader(t(lang, "sim_table"))
+    st.dataframe(
+        breakdown[
+            [
+                "product_category",
+                "discount_leakage",
+                "recovery_rate",
+                "expected_uplift",
+                "simulated_revenue",
+            ]
+        ],
+        use_container_width=True,
+        hide_index=True,
+    )
+
 
 def render_data_quality(df: pd.DataFrame, lang: str) -> None:
     summary = pd.DataFrame(
@@ -368,12 +437,13 @@ def main() -> None:
 
     render_kpis(filtered_df, df_all, lang)
 
-    tab1, tab2, tab3, tab4 = st.tabs(
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(
         [
             t(lang, "tab_exec"),
             t(lang, "tab_recruiter"),
             t(lang, "tab_dq"),
             t(lang, "tab_tables"),
+            t(lang, "tab_scenario"),
         ]
     )
     with tab1:
@@ -384,6 +454,8 @@ def main() -> None:
         render_data_quality(filtered_df, lang)
     with tab4:
         render_executive_tables(filtered_df, lang)
+    with tab5:
+        render_scenario_simulator(filtered_df, lang)
 
 
 if __name__ == "__main__":

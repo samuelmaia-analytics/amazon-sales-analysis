@@ -14,6 +14,10 @@ from amazon_sales_analysis.data_preprocessing import (
     save_processed_data,
 )
 from amazon_sales_analysis.decision_engine import build_actionable_recommendations
+from amazon_sales_analysis.anomaly_detection import (
+    detect_discount_spikes,
+    export_discount_spike_alerts,
+)
 from amazon_sales_analysis.eda import basic_eda
 from amazon_sales_analysis.evaluation import build_executive_summary
 from amazon_sales_analysis.feature_engineering import build_features
@@ -54,7 +58,7 @@ def main() -> None:
     sales_trend_over_time(featured_df)
     top_categories_by_sales(featured_df)
 
-    logger.info("[6/7] Evaluating business impact and opportunities")
+    logger.info("[6/8] Evaluating business impact and opportunities")
     executive_summary = build_executive_summary(featured_df)
     opportunities = rank_discount_opportunities(featured_df)
     recommendations = build_actionable_recommendations(featured_df)
@@ -83,7 +87,12 @@ def main() -> None:
     metrics_path = save_product_metrics(metrics_payload)
     logger.info("Product metrics saved to: %s", metrics_path)
 
-    logger.info("[7/7] Pipeline completed successfully")
+    logger.info("[7/8] Running anomaly detection on discount spikes")
+    spike_alerts = detect_discount_spikes(featured_df)
+    alerts_path = export_discount_spike_alerts(spike_alerts)
+    logger.info("Discount spike alerts saved to: %s", alerts_path)
+
+    logger.info("[8/8] Pipeline completed successfully")
 
 
 if __name__ == "__main__":
