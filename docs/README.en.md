@@ -30,6 +30,7 @@
 - [Quality and Contracts](#quality-and-contracts)
 - [CI and Product Metrics](#ci-and-product-metrics)
 - [Release Process](#release-process)
+- [Decision Cadence](#decision-cadence)
 - [Contact](#contact)
 
 ## Executive Summary
@@ -54,6 +55,9 @@ How can we reduce discount leakage while preserving sales velocity?
 - Engineer business-ready features.
 - Rank category-level leakage opportunities.
 - Deliver executive dashboard views for action.
+- Simulate category-level leakage recovery scenarios in Streamlit.
+- Detect discount spikes and export operational alerts.
+- Expose summary metrics and alerts through FastAPI endpoints.
 
 ## Key Insights
 - Leakage is materially relevant versus current net revenue.
@@ -78,6 +82,7 @@ See root `README.md` for complete project tree and runbook.
 pip install -r requirements.txt
 python main.py
 streamlit run app/streamlit_app.py
+uvicorn app.api:app --reload
 ```
 
 ## Docker
@@ -93,6 +98,7 @@ docker run --rm -p 8501:8501 amazon-sales-analytics
   - raw schema contract enforcement
   - clean-data quality checks
   - metrics generation in `reports/metrics/product_metrics.json`
+  - discount spike alert export in `reports/tables/discount_spike_alerts.csv`
 
 ### Local Quality Commands
 ```bash
@@ -123,6 +129,10 @@ pytest
    git push origin main --tags
    ```
 4. Release workflow (`.github/workflows/release.yml`) validates tag/version/changelog consistency.
+
+## Decision Cadence
+- Weekly: review `north_star_nrr` and `discount_leakage`, then inspect `reports/tables/discount_spike_alerts.csv`.
+- Monthly: recalibrate category discount thresholds using the Scenario Simulator.
 
 ## Contact
 - GitHub: https://github.com/samuelmaia-data-analyst

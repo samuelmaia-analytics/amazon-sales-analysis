@@ -24,6 +24,7 @@
 - [Qualidade e Contratos](#qualidade-e-contratos)
 - [CI e Métricas de Produto](#ci-e-métricas-de-produto)
 - [Processo de Release](#processo-de-release)
+- [Cadência de Decisão](#cadência-de-decisão)
 - [Stack](#stack)
 - [Contato](#contato)
 
@@ -32,7 +33,10 @@ Este projeto demonstra um fluxo completo de dados aplicado a vendas da Amazon:
 - ingestão automatizada via Kaggle Hub;
 - limpeza com regras de consistência;
 - análise exploratória e visualizações executivas;
-- dashboard Streamlit com foco em decisão e storytelling de negócio.
+- dashboard Streamlit com foco em decisão e storytelling de negócio;
+- simulador de cenários por categoria para recuperação de leakage;
+- detecção de anomalias de picos de desconto com export de alertas;
+- API FastAPI para expor métricas e alertas para integração com BI.
 
 ## Diferenciais para Recrutadores e Leads
 - Estrutura em camadas, orientada à manutenção.
@@ -51,6 +55,7 @@ python -m venv .venv
 pip install -r requirements.txt
 python scripts/run_pipeline.py
 streamlit run app/streamlit_app.py
+uvicorn app.api:app --reload
 ```
 
 ## Qualidade e Contratos
@@ -60,6 +65,7 @@ streamlit run app/streamlit_app.py
   - validação de esquema de entrada
   - validações de domínio no dataset limpo
   - geração de métricas em `reports/metrics/product_metrics.json`
+  - export de alertas em `reports/tables/discount_spike_alerts.csv`
 
 ### Comandos de Qualidade
 ```bash
@@ -91,8 +97,12 @@ pytest
    ```
 4. O workflow `.github/workflows/release.yml` valida coerência de versão/changelog e publica o release.
 
+## Cadência de Decisão
+- Semanal: acompanhar `north_star_nrr` e `discount_leakage`, revisando os alertas de `reports/tables/discount_spike_alerts.csv`.
+- Mensal: revisar e recalibrar thresholds de desconto por categoria com base no Scenario Simulator.
+
 ## Stack
-Python, Pandas, Plotly, Streamlit, Seaborn, Matplotlib, Pytest.
+Python, Pandas, Plotly, Streamlit, FastAPI, Seaborn, Matplotlib, Pytest.
 
 ## Contato
 - GitHub: https://github.com/samuelmaia-data-analyst

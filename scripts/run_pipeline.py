@@ -35,25 +35,25 @@ def main() -> None:
     configure_logging()
     logger = logging.getLogger("pipeline")
 
-    logger.info("[1/7] Downloading raw dataset")
+    logger.info("[1/8] Downloading raw dataset")
     download_amazon_sales_dataset()
 
-    logger.info("[2/7] Loading raw data")
+    logger.info("[2/8] Loading raw data")
     raw_df = load_raw_sales_data()
     enforce_raw_contract(raw_df)
     contract_path = export_contract_snapshot(contract_version=CONTRACT_VERSION)
     logger.info("Data contract snapshot saved to: %s", contract_path)
 
-    logger.info("[3/7] Cleaning dataset")
+    logger.info("[3/8] Cleaning dataset")
     clean_df = clean_sales_data(raw_df)
     enforce_clean_quality_gates(clean_df)
     output_path = save_processed_data(clean_df)
     logger.info("Processed dataset saved to: %s", output_path)
 
-    logger.info("[4/7] Building business features")
+    logger.info("[4/8] Building business features")
     featured_df = build_features(clean_df)
 
-    logger.info("[5/7] Running exploratory analysis and visual exports")
+    logger.info("[5/8] Running exploratory analysis and visual exports")
     basic_eda(featured_df)
     sales_trend_over_time(featured_df)
     top_categories_by_sales(featured_df)
