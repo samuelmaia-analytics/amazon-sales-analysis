@@ -18,6 +18,7 @@ from amazon_sales_analysis.anomaly_detection import (
     detect_discount_spikes,
     export_discount_spike_alerts,
 )
+from amazon_sales_analysis import __version__
 from amazon_sales_analysis.eda import basic_eda
 from amazon_sales_analysis.evaluation import build_executive_summary
 from amazon_sales_analysis.feature_engineering import build_features
@@ -29,6 +30,7 @@ from amazon_sales_analysis.table_organization import build_executive_tables
 from amazon_sales_analysis.visualization import sales_trend_over_time, top_categories_by_sales
 
 CONTRACT_VERSION = "1.0.0"
+PIPELINE_VERSION = __version__
 
 
 def main() -> None:
@@ -83,6 +85,7 @@ def main() -> None:
         clean_df,
         featured_df,
         contract_version=CONTRACT_VERSION,
+        pipeline_version=PIPELINE_VERSION,
     )
     metrics_path = save_product_metrics(metrics_payload)
     logger.info("Product metrics saved to: %s", metrics_path)

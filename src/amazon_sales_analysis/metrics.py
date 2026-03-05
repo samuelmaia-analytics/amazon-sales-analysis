@@ -17,6 +17,7 @@ def collect_product_metrics(
     df_featured: pd.DataFrame,
     *,
     contract_version: str,
+    pipeline_version: str = "unknown",
 ) -> dict[str, float | int | str]:
     gross_revenue = float(df_featured["gross_revenue"].sum()) if not df_featured.empty else 0.0
     total_revenue = float(df_featured["total_revenue"].sum()) if not df_featured.empty else 0.0
@@ -31,6 +32,7 @@ def collect_product_metrics(
     metrics: dict[str, float | int | str] = {
         "metrics_version": PRODUCT_METRICS_VERSION,
         "contract_version": contract_version,
+        "pipeline_version": pipeline_version,
         "generated_at_utc": datetime.now(UTC).isoformat(),
         "raw_row_count": int(len(df_raw)),
         "clean_row_count": int(len(df_clean)),

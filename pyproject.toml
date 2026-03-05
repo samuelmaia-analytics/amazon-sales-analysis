@@ -1,6 +1,6 @@
 [project]
 name = "amazon-sales-analysis"
-version = "0.1.0"
+version = "0.2.0"
 description = "Business-focused sales analytics pipeline with quality gates and executive metrics."
 requires-python = ">=3.12"
 

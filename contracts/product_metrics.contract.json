@@ -2,6 +2,7 @@
   "metrics_version": "1.0.0",
   "required_fields": [
     "contract_version",
+    "pipeline_version",
     "generated_at_utc",
     "gross_revenue",
     "north_star_nrr",

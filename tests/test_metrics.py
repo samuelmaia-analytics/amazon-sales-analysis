@@ -31,8 +31,15 @@ def test_collect_product_metrics_has_core_fields() -> None:
     clean_df = _base_df()
     featured_df = build_features(clean_df)
 
-    metrics = collect_product_metrics(raw_df, clean_df, featured_df, contract_version="1.0.0")
+    metrics = collect_product_metrics(
+        raw_df,
+        clean_df,
+        featured_df,
+        contract_version="1.0.0",
+        pipeline_version="0.2.0",
+    )
     assert metrics["contract_version"] == "1.0.0"
+    assert metrics["pipeline_version"] == "0.2.0"
     assert metrics["raw_row_count"] == 2
     assert metrics["clean_row_count"] == 2
     assert "north_star_nrr" in metrics

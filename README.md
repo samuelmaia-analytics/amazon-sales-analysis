@@ -92,8 +92,11 @@ amazon-sales-analysis/
 |-- reports/
 |   |-- figures/
 |   `-- tables/
+|-- Makefile
 |-- scripts/
-|   `-- run_pipeline.py
+|   |-- run_alerts.py
+|   |-- run_pipeline.py
+|   `-- run_scenario_simulator.py
 |-- src/amazon_sales_analysis/
 |   |-- analytics.py
 |   |-- anomaly_detection.py
@@ -144,6 +147,14 @@ pip install -r requirements.txt
 python main.py
 streamlit run app/streamlit_app.py
 uvicorn app.api:app --reload
+make pipeline
+make alerts
+make scenario
+```
+
+### Cron Example (Operational Alerts)
+```bash
+0 8 * * 1-5 cd /path/to/amazon-sales-analysis && make alerts
 ```
 
 ### Docker
@@ -208,6 +219,7 @@ uvicorn app.api:app --reload
   - required schema on raw data
   - clean-data quality gates (domain and invalid-value checks)
   - product metrics generation in `reports/metrics/product_metrics.json`
+  - pipeline provenance with `pipeline_version` in metrics artifacts
 
 ### Local Quality Commands
 ```bash
@@ -230,13 +242,13 @@ pytest
 1. Update changelog with a new section in `CHANGELOG.md` (format `## [x.y.z] - YYYY-MM-DD`).
 2. Bump package version:
    ```bash
-   python scripts/bump_version.py 0.2.0
+   python scripts/bump_version.py 0.3.0
    ```
 3. Commit, tag and push:
    ```bash
    git add .
-   git commit -m "chore(release): v0.2.0"
-   git tag v0.2.0
+   git commit -m "chore(release): v0.3.0"
+   git tag v0.3.0
    git push origin main --tags
    ```
 4. The release workflow validates version/changelog consistency and publishes GitHub release.
