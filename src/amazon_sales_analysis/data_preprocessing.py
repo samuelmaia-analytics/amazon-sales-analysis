@@ -4,6 +4,7 @@ import pandas as pd
 
 from .config import PROCESSED_DATA_DIR, RAW_DATA_DIR
 from .contracts import RAW_REQUIRED_COLUMNS
+from .validation import sales_schema
 
 RAW_SUBDIR = "amazon_sales"
 RAW_FILENAME = "amazon_sales_dataset.csv"
@@ -48,6 +49,13 @@ def clean_sales_data(df: pd.DataFrame) -> pd.DataFrame:
     cleaned["total_revenue"] = cleaned["discounted_price"] * cleaned["quantity_sold"]
 
     return cleaned.reset_index(drop=True)
+
+
+def validate_raw_sales_data(df: pd.DataFrame) -> pd.DataFrame:
+    try:
+        return sales_schema.validate(df, lazy=True)
+    except Exception as exc:
+        raise ValueError(f"Falha na validacao do schema com pandera: {exc}") from exc
 
 
 def save_processed_data(df: pd.DataFrame, filename: str = PROCESSED_FILENAME) -> Path:

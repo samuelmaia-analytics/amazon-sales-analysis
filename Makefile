@@ -6,8 +6,7 @@ pipeline:
 	$(PYTHON) scripts/run_pipeline.py
 
 alerts:
-	$(PYTHON) scripts/run_alerts.py
+	$(PYTHON) alerts/discount_spike_alert.py
 
 scenario:
-	$(PYTHON) scripts/run_scenario_simulator.py
-
+	$(PYTHON) scenario_simulation.py

@@ -1,7 +1,7 @@
 ﻿import pandas as pd
 import pytest
 
-from amazon_sales_analysis.data_preprocessing import clean_sales_data
+from amazon_sales_analysis.data_preprocessing import clean_sales_data, validate_raw_sales_data
 
 
 def _base_df() -> pd.DataFrame:
@@ -42,3 +42,11 @@ def test_discount_rating_and_revenue_are_normalized() -> None:
     assert cleaned.loc[0, "rating"] == 5
     assert cleaned.loc[0, "discounted_price"] == 0
     assert cleaned.loc[0, "total_revenue"] == 0
+
+
+def test_pandera_schema_validation_rejects_invalid_quantity() -> None:
+    invalid_df = _base_df()
+    invalid_df.loc[0, "quantity_sold"] = 0
+
+    with pytest.raises(ValueError, match="pandera"):
+        validate_raw_sales_data(invalid_df)

@@ -88,7 +88,7 @@ uvicorn app.api:app --reload
 ```
 
 ## API Examples
-`GET /metrics/summary` (sample)
+`GET /api/v1/revenue_metrics` (sample)
 ```json
 {
   "total_revenue": 32866579.536,
@@ -153,11 +153,11 @@ pytest
 1. Add release entry in `CHANGELOG.md`.
 2. Bump version:
    ```bash
-   python scripts/bump_version.py 0.2.0
+   python scripts/bump_version.py 1.0.0
    ```
 3. Tag and push:
    ```bash
-   git tag v0.2.0
+   git tag v1.0.0
    git push origin main --tags
    ```
 4. Release workflow (`.github/workflows/release.yml`) validates tag/version/changelog consistency.

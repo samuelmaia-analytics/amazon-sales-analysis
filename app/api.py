@@ -18,7 +18,7 @@ ALERTS_PATH = ROOT_DIR / "reports" / "tables" / "discount_spike_alerts.csv"
 
 app = FastAPI(
     title="Amazon Sales Analytics API",
-    version="0.2.0",
+    version="1.0.0",
     description="Executive metrics and operational alerts for sales performance.",
 )
 
@@ -53,6 +53,11 @@ def metrics_summary() -> dict[str, float]:
         "total_orders": kpis["total_orders"],
         "avg_ticket": kpis["avg_ticket"],
     }
+
+
+@app.get("/api/v1/revenue_metrics")
+def revenue_metrics_v1() -> dict[str, float]:
+    return metrics_summary()
 
 
 @app.get("/metrics/opportunities")

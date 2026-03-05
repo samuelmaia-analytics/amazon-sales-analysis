@@ -82,6 +82,8 @@ amazon-sales-analysis/
 |-- assets/
 |   |-- amazon_logo.svg
 |   `-- custom.css
+|-- alerts/
+|   `-- discount_spike_alert.py
 |-- data/
 |   |-- raw/
 |   `-- processed/
@@ -93,6 +95,7 @@ amazon-sales-analysis/
 |   |-- figures/
 |   `-- tables/
 |-- Makefile
+|-- scenario_simulation.py
 |-- scripts/
 |   |-- run_alerts.py
 |   |-- run_pipeline.py
@@ -170,7 +173,7 @@ Base URL (local): `http://127.0.0.1:8000`
 uvicorn app.api:app --reload
 ```
 
-`GET /metrics/summary`
+`GET /api/v1/revenue_metrics`
 ```json
 {
   "total_revenue": 32866579.536,
@@ -242,13 +245,13 @@ pytest
 1. Update changelog with a new section in `CHANGELOG.md` (format `## [x.y.z] - YYYY-MM-DD`).
 2. Bump package version:
    ```bash
-   python scripts/bump_version.py 0.3.0
+   python scripts/bump_version.py 1.0.0
    ```
 3. Commit, tag and push:
    ```bash
    git add .
-   git commit -m "chore(release): v0.3.0"
-   git tag v0.3.0
+   git commit -m "chore(release): v1.0.0"
+   git tag v1.0.0
    git push origin main --tags
    ```
 4. The release workflow validates version/changelog consistency and publishes GitHub release.

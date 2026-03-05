@@ -61,7 +61,7 @@ uvicorn app.api:app --reload
 ```
 
 ## Exemplos de API
-`GET /metrics/summary` (exemplo)
+`GET /api/v1/revenue_metrics` (exemplo)
 ```json
 {
   "total_revenue": 32866579.536,
@@ -120,11 +120,11 @@ pytest
 1. Atualizar o `CHANGELOG.md` com a nova versão.
 2. Atualizar versão:
    ```bash
-   python scripts/bump_version.py 0.2.0
+   python scripts/bump_version.py 1.0.0
    ```
 3. Criar tag e enviar:
    ```bash
-   git tag v0.2.0
+   git tag v1.0.0
    git push origin main --tags
    ```
 4. O workflow `.github/workflows/release.yml` valida coerência de versão/changelog e publica o release.

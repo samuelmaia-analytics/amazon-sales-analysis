@@ -5,6 +5,11 @@ from pathlib import Path
 ROOT_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT_DIR / "src"))
 
+from amazon_sales_analysis import __version__
+from amazon_sales_analysis.anomaly_detection import (
+    detect_discount_spikes,
+    export_discount_spike_alerts,
+)
 from amazon_sales_analysis.config import TABLES_DIR
 from amazon_sales_analysis.contracts import enforce_raw_contract, export_contract_snapshot
 from amazon_sales_analysis.data_ingestion import download_amazon_sales_dataset
@@ -12,13 +17,9 @@ from amazon_sales_analysis.data_preprocessing import (
     clean_sales_data,
     load_raw_sales_data,
     save_processed_data,
+    validate_raw_sales_data,
 )
 from amazon_sales_analysis.decision_engine import build_actionable_recommendations
-from amazon_sales_analysis.anomaly_detection import (
-    detect_discount_spikes,
-    export_discount_spike_alerts,
-)
-from amazon_sales_analysis import __version__
 from amazon_sales_analysis.eda import basic_eda
 from amazon_sales_analysis.evaluation import build_executive_summary
 from amazon_sales_analysis.feature_engineering import build_features
@@ -43,6 +44,7 @@ def main() -> None:
     logger.info("[2/8] Loading raw data")
     raw_df = load_raw_sales_data()
     enforce_raw_contract(raw_df)
+    validate_raw_sales_data(raw_df)
     contract_path = export_contract_snapshot(contract_version=CONTRACT_VERSION)
     logger.info("Data contract snapshot saved to: %s", contract_path)
 
