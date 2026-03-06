@@ -1,6 +1,6 @@
 # Amazon Sales Analytics | Business Impact Portfolio
 
-[![Latest Release](https://img.shields.io/github/v/release/samuelmaia-data-analyst/amazon-sales-analysis?display_name=release)](https://github.com/samuelmaia-data-analyst/amazon-sales-analysis/releases)
+[![Latest Release](https://img.shields.io/github/v/release/samuelmaia-analytics/amazon-sales-analysis?display_name=release)](https://github.com/samuelmaia-analytics/amazon-sales-analysis/releases)
 [![Release Notes](https://img.shields.io/badge/Release%20Notes-CHANGELOG-blue)](CHANGELOG.md)
 
 ## Language
@@ -45,7 +45,7 @@
 
 ## Public Releases
 The project release channel is published at:
-- GitHub Releases: https://github.com/samuelmaia-data-analyst/amazon-sales-analysis/releases
+- GitHub Releases: https://github.com/samuelmaia-analytics/amazon-sales-analysis/releases
 - Changelog: `CHANGELOG.md`
 
 Quick value from latest release line:
@@ -198,7 +198,7 @@ Python, Pandas, Plotly, Streamlit, FastAPI, Seaborn, Matplotlib, Pytest.
 ## How to Run
 ### Local
 ```bash
-git clone https://github.com/samuelmaia-data-analyst/amazon-sales-analysis.git
+git clone https://github.com/samuelmaia-analytics/amazon-sales-analysis.git
 cd amazon-sales-analysis
 pip install -r requirements.txt
 python main.py
@@ -326,8 +326,8 @@ Use semantic commit messages:
 
 ## Author
 Samuel Maia
-- GitHub: https://github.com/samuelmaia-data-analyst
-- LinkedIn: https://linkedin.com/in/samuelmaia-data-analyst
+- GitHub: https://github.com/samuelmaia-analytics
+- LinkedIn: https://linkedin.com/in/samuelmaia-analytics
 - Email: smaia2@gmail.com
 
 

@@ -35,9 +35,9 @@ def detect_discount_spikes(
     daily["obs_count"] = grouped["avg_discount_percent"].transform("count")
 
     safe_std = daily["baseline_std"].replace(0, pd.NA)
-    daily["z_score"] = (
-        (daily["avg_discount_percent"] - daily["baseline_mean"]) / safe_std
-    ).fillna(0.0)
+    daily["z_score"] = ((daily["avg_discount_percent"] - daily["baseline_mean"]) / safe_std).fillna(
+        0.0
+    )
     daily["discount_gap_pct"] = (daily["avg_discount_percent"] - daily["baseline_mean"]).clip(
         lower=0
     )

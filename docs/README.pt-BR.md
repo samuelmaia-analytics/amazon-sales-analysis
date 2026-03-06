@@ -137,8 +137,8 @@ pytest
 Python, Pandas, Plotly, Streamlit, FastAPI, Seaborn, Matplotlib, Pytest.
 
 ## Contato
-- GitHub: https://github.com/samuelmaia-data-analyst
-- LinkedIn: https://linkedin.com/in/samuelmaia-data-analyst
+- GitHub: https://github.com/samuelmaia-analytics
+- LinkedIn: https://linkedin.com/in/samuelmaia-analytics
 - Email: smaia2@gmail.com
 
 

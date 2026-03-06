@@ -25,7 +25,9 @@ def _parse_category_rates(raw_value: str) -> dict[str, float]:
         if not item:
             continue
         if "=" not in item:
-            raise ValueError("Formato invalido em --category-rates. Use 'Beauty=0.08,Fashion=0.12'.")
+            raise ValueError(
+                "Formato invalido em --category-rates. Use 'Beauty=0.08,Fashion=0.12'."
+            )
         category, value = item.split("=", 1)
         rates[category.strip()] = float(value.strip())
     return rates
