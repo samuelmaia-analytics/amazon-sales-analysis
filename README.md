@@ -1,8 +1,11 @@
-﻿# Amazon Sales Analytics | Business Impact Portfolio
+# Amazon Sales Analytics | Business Impact Portfolio
+
+[![Latest Release](https://img.shields.io/github/v/release/samuelmaia-data-analyst/amazon-sales-analysis?display_name=release)](https://github.com/samuelmaia-data-analyst/amazon-sales-analysis/releases)
+[![Release Notes](https://img.shields.io/badge/Release%20Notes-CHANGELOG-blue)](CHANGELOG.md)
 
 ## Language
 - English: [docs/README.en.md](docs/README.en.md)
-- Português (BR): [docs/README.pt-BR.md](docs/README.pt-BR.md)
+- Portugu�s (BR): [docs/README.pt-BR.md](docs/README.pt-BR.md)
 
 ## Summary
 - Business problem: revenue leakage from discount strategy.
@@ -17,6 +20,7 @@
 - Upside at 5% leakage recovery: **+$252.3K**
 
 ## Table of Contents
+- [Public Releases](#public-releases)
 - [Executive Summary](#executive-summary)
 - [Business Problem](#business-problem)
 - [Dataset](#dataset)
@@ -25,6 +29,8 @@
 - [Results](#results)
 - [Business Impact](#business-impact)
 - [Business Recommendations](#business-recommendations)
+- [Action Playbook (Executive)](#action-playbook-executive)
+- [Scenario Simulation Snapshot](#scenario-simulation-snapshot)
 - [Tech Stack](#tech-stack)
 - [How to Run](#how-to-run)
 - [API Examples](#api-examples)
@@ -36,6 +42,16 @@
 - [Future Improvements](#future-improvements)
 - [Versioning Convention](#versioning-convention)
 - [Author](#author)
+
+## Public Releases
+The project release channel is published at:
+- GitHub Releases: https://github.com/samuelmaia-data-analyst/amazon-sales-analysis/releases
+- Changelog: `CHANGELOG.md`
+
+Quick value from latest release line:
+- Versioned pipeline with contracts + quality gates.
+- Scenario simulation artifact (`scenario_simulation_summary.json`) for executive decisions.
+- Operational alerts for discount spikes (`discount_spike_alerts.csv`).
 
 ## Executive Summary
 The project addresses a strategic revenue efficiency problem: high discount leakage reduces net sales performance even when order volume is strong.
@@ -137,6 +153,44 @@ amazon-sales-analysis/
 - Shift campaign strategy from blanket discounts to category-specific thresholds.
 - Track `discount_to_revenue_ratio` as a governance KPI in leadership reviews.
 - Pilot policy in top 3 leakage categories before full rollout.
+
+## Action Playbook (Executive)
+| Priority | Action | Owner | Cadence | Trigger | Target |
+|---|---|---|---|---|---|
+| P1 | Apply discount caps in top leakage categories (Beauty, Books, Sports) | Revenue Ops + Category Managers | Weekly | `discount_to_revenue_ratio > 15%` | Recover 5% leakage |
+| P2 | Review anomaly alerts and freeze outlier campaigns | Sales Leadership | Weekly | `severity in {medium, high}` in spike alerts | Reduce avoidable leakage |
+| P3 | Recalibrate discount thresholds by category using simulation outputs | Head of Sales + FP&A | Monthly | `north_star_nrr < 87%` | Lift NRR trend |
+| P4 | Scale pilot policy from top 3 categories to full portfolio | Revenue Ops | Quarterly | Pilot reaches recovery target | Institutionalize governance |
+
+Execution artifacts:
+- `reports/tables/discount_opportunities.csv`
+- `reports/tables/discount_spike_alerts.csv`
+- `reports/tables/scenario_simulation_summary.json`
+
+## Scenario Simulation Snapshot
+Based on `reports/tables/scenario_simulation_summary.json` (5% default leakage recovery):
+
+| Metric | Baseline | Simulated | Delta |
+|---|---:|---:|---:|
+| Net Revenue | $32.87M | $33.12M | **+$252.3K** |
+| NRR | 86.69% | 87.35% | **+0.66 p.p.** |
+| Gross Revenue | $37.91M | $37.91M | - |
+
+Top category uplifts from `reports/tables/scenario_simulation_breakdown.csv`:
+
+| Category | Expected Uplift |
+|---|---:|
+| Beauty | $42.7K |
+| Books | $42.5K |
+| Sports | $42.3K |
+
+Visual view (5% scenario):
+```text
+Net Revenue (USD M)
+Baseline  | ################################ 32.87
+Simulated | ################################# 33.12
+Gain      | +0.25M
+```
 
 ## Tech Stack
 Python, Pandas, Plotly, Streamlit, FastAPI, Seaborn, Matplotlib, Pytest.
