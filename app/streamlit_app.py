@@ -16,6 +16,7 @@ from amazon_sales_analysis.warehouse_service import warehouse_query_metadata
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 DATASET_PATH = PROCESSED_DATA_DIR / "amazon_sales_clean.csv"
+CUSTOM_CSS_PATH = ROOT_DIR / "assets" / "custom.css"
 
 st.set_page_config(page_title="Amazon Commercial Performance Monitor", layout="wide")
 
@@ -40,6 +41,11 @@ def format_percent(value: float) -> str:
 
 def _as_mapping(value: object) -> dict[str, Any]:
     return cast(dict[str, Any], value if isinstance(value, dict) else {})
+
+
+def load_custom_css() -> None:
+    if CUSTOM_CSS_PATH.exists():
+        st.markdown(f"<style>{CUSTOM_CSS_PATH.read_text(encoding='utf-8')}</style>", unsafe_allow_html=True)
 
 
 @st.cache_data(ttl=300)
@@ -69,10 +75,12 @@ def load_warehouse_metadata() -> dict[str, object]:
 
 
 def main() -> None:
-    st.title("Amazon Commercial Performance Monitor")
-    st.caption(
-        "Monitoramento de performance comercial com foco em revenue, ticket medio, categorias, "
-        "produtos lideres e tendencia temporal."
+    load_custom_css()
+    st.markdown("<div class='main-header'>Amazon Commercial Performance Monitor</div>", unsafe_allow_html=True)
+    st.markdown(
+        "<div class='sub-header'>Monitoramento de performance comercial com foco em revenue, "
+        "ticket medio, categorias, produtos lideres, tendencia temporal e saude operacional.</div>",
+        unsafe_allow_html=True,
     )
 
     try:
@@ -95,6 +103,23 @@ def main() -> None:
     col2.metric("Ticket medio", format_currency(float(kpi_lookup["avg_order_value"])))
     col3.metric("Pedidos", f"{int(kpi_lookup['total_orders']):,}")
     col4.metric("NRR", f"{float(kpi_lookup['net_revenue_retained']) * 100:.1f}%")
+
+    if operational_summary is not None:
+        top_ops_cols = st.columns([1.15, 1.15, 1.15, 1.35])
+        run_status = _as_mapping(operational_summary.get("run_status", {}))
+        top_ops_cols[0].metric("Status do pipeline", str(run_status.get("status", "unknown")))
+        top_ops_cols[1].metric(
+            "Duracao ultimo run",
+            f"{float(run_status.get('duration_seconds', 0.0)):.1f}s",
+        )
+        top_ops_cols[2].metric(
+            "Status operacional",
+            str(operational_summary.get("overall_status", "unknown")),
+        )
+        top_ops_cols[3].metric(
+            "Warehouse",
+            "available" if bool(warehouse_metadata.get("duckdb_available", False)) else "fallback",
+        )
 
     tab1, tab2, tab3, tab4, tab5 = st.tabs(
         [
@@ -191,24 +216,15 @@ def main() -> None:
         if operational_summary is None:
             st.warning("Nenhum run operacional foi encontrado ainda.")
         else:
-            status_cols = st.columns(4)
             run_status = _as_mapping(operational_summary.get("run_status", {}))
             quality_status = _as_mapping(operational_summary.get("quality_gates", {}))
             metrics_status = _as_mapping(operational_summary.get("metrics_regression", {}))
             warehouse_status = _as_mapping(operational_summary.get("warehouse_validation", {}))
 
-            status_cols[0].metric(
-                "Status do run", str(run_status.get("status", operational_summary["overall_status"]))
-            )
-            status_cols[1].metric(
-                "Duracao (s)",
-                f"{float(run_status.get('duration_seconds', 0.0)):.1f}",
-            )
-            status_cols[2].metric("Quality gates", str(quality_status.get("status", "unknown")))
-            status_cols[3].metric(
-                "Warehouse",
-                str(warehouse_status.get("status", "unknown")),
-            )
+            status_cols = st.columns(3)
+            status_cols[0].metric("Quality gates", str(quality_status.get("status", "unknown")))
+            status_cols[1].metric("KPI regression", str(metrics_status.get("status", "unknown")))
+            status_cols[2].metric("Warehouse", str(warehouse_status.get("status", "unknown")))
 
             st.caption(
                 "Ultimo run: "
@@ -216,57 +232,73 @@ def main() -> None:
                 f"pipeline_version={operational_summary['pipeline_version']}"
             )
 
-            operational_cards = pd.DataFrame(
-                [
-                    {
-                        "component": "quality_gates",
-                        "status": quality_status.get("status", "unknown"),
-                        "details": quality_status.get("path", ""),
-                    },
-                    {
-                        "component": "metrics_regression",
-                        "status": metrics_status.get("status", "unknown"),
-                        "details": ", ".join(metrics_status.get("failed_metrics", []))
-                        if isinstance(metrics_status.get("failed_metrics"), list)
-                        else "",
-                    },
-                    {
-                        "component": "warehouse_validation",
-                        "status": warehouse_status.get("status", "unknown"),
-                        "details": warehouse_status.get("reason", warehouse_status.get("path", "")),
-                    },
-                ]
-            )
-            st.dataframe(operational_cards, use_container_width=True, hide_index=True)
+            details_col, warehouse_col = st.columns([1.15, 1], gap="large")
+            with details_col:
+                st.markdown("**Componentes do ultimo run**")
+                operational_cards = pd.DataFrame(
+                    [
+                        {
+                            "component": "quality_gates",
+                            "status": quality_status.get("status", "unknown"),
+                            "details": quality_status.get("path", ""),
+                        },
+                        {
+                            "component": "metrics_regression",
+                            "status": metrics_status.get("status", "unknown"),
+                            "details": ", ".join(metrics_status.get("failed_metrics", []))
+                            if isinstance(metrics_status.get("failed_metrics"), list)
+                            else "",
+                        },
+                        {
+                            "component": "warehouse_validation",
+                            "status": warehouse_status.get("status", "unknown"),
+                            "details": warehouse_status.get(
+                                "reason", warehouse_status.get("path", "")
+                            ),
+                        },
+                    ]
+                )
+                st.dataframe(
+                    operational_cards,
+                    use_container_width=True,
+                    hide_index=True,
+                    height=215,
+                )
 
-        st.subheader("Historico Recente de Runs")
-        if run_history:
-            history_df = pd.DataFrame(run_history)
-            st.dataframe(history_df, use_container_width=True, hide_index=True)
-        else:
-            st.info("Historico de runs ainda nao disponivel.")
+            with warehouse_col:
+                st.markdown("**Camada Analitica**")
+                warehouse_cols = st.columns(3)
+                warehouse_cols[0].metric(
+                    "DuckDB disponivel",
+                    "yes" if bool(warehouse_metadata.get("duckdb_available", False)) else "no",
+                )
+                warehouse_cols[1].metric(
+                    "Tabela", str(warehouse_metadata.get("warehouse_table", "unknown"))
+                )
+                warehouse_cols[2].metric("Ambiente", settings.environment)
+                st.caption(str(warehouse_metadata.get("warehouse_db_path", "")))
 
-        st.subheader("Drift Entre Ultimos Runs")
-        if run_comparison is None:
-            st.info("Sao necessarios pelo menos dois runs para comparar drift de KPIs.")
-        else:
-            st.metric("Severidade geral", str(run_comparison["overall_severity"]))
-            drift_df = (
-                pd.DataFrame(cast(dict[str, Any], run_comparison["kpi_deltas"]))
-                .T.reset_index()
-                .rename(columns={"index": "metric"})
-            )
-            st.dataframe(drift_df, use_container_width=True, hide_index=True)
+        history_col, drift_col = st.columns([1.2, 1], gap="large")
+        with history_col:
+            st.subheader("Historico Recente de Runs")
+            if run_history:
+                history_df = pd.DataFrame(run_history)
+                st.dataframe(history_df, use_container_width=True, hide_index=True, height=260)
+            else:
+                st.info("Historico de runs ainda nao disponivel.")
 
-        st.subheader("Camada Analitica")
-        warehouse_cols = st.columns(3)
-        warehouse_cols[0].metric(
-            "DuckDB disponivel",
-            "yes" if bool(warehouse_metadata.get("duckdb_available", False)) else "no",
-        )
-        warehouse_cols[1].metric("Tabela", str(warehouse_metadata.get("warehouse_table", "unknown")))
-        warehouse_cols[2].metric("Ambiente", settings.environment)
-        st.caption(str(warehouse_metadata.get("warehouse_db_path", "")))
+        with drift_col:
+            st.subheader("Drift Entre Ultimos Runs")
+            if run_comparison is None:
+                st.info("Sao necessarios pelo menos dois runs para comparar drift de KPIs.")
+            else:
+                st.metric("Severidade geral", str(run_comparison["overall_severity"]))
+                drift_df = (
+                    pd.DataFrame(cast(dict[str, Any], run_comparison["kpi_deltas"]))
+                    .T.reset_index()
+                    .rename(columns={"index": "metric"})
+                )
+                st.dataframe(drift_df, use_container_width=True, hide_index=True, height=260)
 
     with tab5:
         st.subheader("KPIs definidos")
