@@ -2,4 +2,4 @@ blank_issues_enabled: false
 contact_links:
   - name: Contribution Guide
     url: https://github.com/samuelmaia-analytics/amazon-sales-analysis/blob/main/CONTRIBUTING.md
-    about: Read the contribution workflow and repository standards before opening larger changes.
+    about: Review the contribution workflow, validation requirements, and repository standards before opening broad changes.

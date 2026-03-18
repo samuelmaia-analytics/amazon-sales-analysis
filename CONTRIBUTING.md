@@ -1,50 +1,63 @@
 # Contributing
 
-This repository is structured like a small production analytics platform. Contributions should improve reliability, clarity, testability, or analytical usefulness without introducing unnecessary complexity.
+This repository is maintained as a compact, production-oriented analytics platform. Contributions should improve correctness, reliability, observability, maintainability, or documentation quality without adding ornamental architecture.
 
-## Languages
+## Read First
 
-- International: [README.md](/C:/Users/samue/PycharmProjects/amazon-sales-analysis/README.md)
-- PT-BR: [docs/README.pt-BR.md](/C:/Users/samue/PycharmProjects/amazon-sales-analysis/docs/README.pt-BR.md)
-- PT-PT: [docs/README.pt-PT.md](/C:/Users/samue/PycharmProjects/amazon-sales-analysis/docs/README.pt-PT.md)
+- Main overview: [README.md](/C:/Users/samue/PycharmProjects/amazon-sales-analysis/README.md)
+- Structure guide: [docs/REPOSITORY_STRUCTURE.md](/C:/Users/samue/PycharmProjects/amazon-sales-analysis/docs/REPOSITORY_STRUCTURE.md)
+- PT-BR overview: [docs/README.pt-BR.md](/C:/Users/samue/PycharmProjects/amazon-sales-analysis/docs/README.pt-BR.md)
+- PT-PT overview: [docs/README.pt-PT.md](/C:/Users/samue/PycharmProjects/amazon-sales-analysis/docs/README.pt-PT.md)
 
-## Principles
+## Contribution Principles
 
-- Prefer operationally useful changes over cosmetic refactors
-- Preserve clear separation between ingestion, transformation, serving, and documentation
-- Keep business logic in reusable modules under `src/amazon_sales_analysis/`
-- Add or update tests when behavior changes
-- Document non-obvious trade-offs in code, PRs, or docs
+- Favor changes with operational value over cosmetic refactors.
+- Keep ingestion, transformation, validation, observability, and serving responsibilities distinct.
+- Prefer explicit failure modes over silent fallbacks.
+- Keep API, CLI, and dashboard layers thin and backed by reusable package code.
+- Update tests and docs whenever public behavior or repository structure changes.
 
-## Development Workflow
-
-### 1. Environment
+## Local Setup
 
 ```bash
 python -m pip install -e .[dev]
 pre-commit install
+cp .env.example .env
 ```
 
-### 2. Branching
+## Development Workflow
 
-- Branch from `main`
-- Use short, descriptive branch names
-- Keep PRs scoped to a single technical objective when possible
+1. Branch from `main` with a focused scope.
+2. Change code, tests, and documentation together.
+3. Validate locally before opening a PR.
+4. Describe technical impact and risk explicitly in the PR.
 
-### 3. Implementation
+## Placement Rules
 
-- Update code, tests, and docs together
-- Avoid hardcoded paths, silent fallbacks, and hidden side effects
-- Keep CLI and API layers thin
-- Prefer explicit validation errors over implicit failure modes
+- Put reusable application logic under `src/amazon_sales_analysis/`.
+- Put API and Streamlit entry points under `app/`.
+- Put wrapper scripts under `scripts/`, not business logic.
+- Put warehouse SQL under `sql/`.
+- Keep exploratory work in `notebooks/`.
+- Treat `data/` and `reports/` as generated runtime locations.
+
+## Compatibility Policy
+
+The package root still contains compatibility modules such as `data_ingestion.py`, `metrics.py`, and `warehouse.py`.
+
+- Use domain packages for new development.
+- Touch compatibility modules only when preserving or formally evolving public import paths.
+- Keep re-exports explicit.
+- If a compatibility path needs deprecation, document it in the PR and in the README before removal.
 
 ## Required Validation
 
-Run before opening a PR:
+Run all of the following before opening a PR:
 
 ```bash
 make quality
 make test
+make build-check
 ```
 
 Equivalent commands:
@@ -53,34 +66,37 @@ Equivalent commands:
 black --check .
 isort --check-only .
 ruff check .
-mypy src scripts app alerts
-pytest
+mypy src tests app alerts scripts
+pytest -q
+python -m build --sdist --wheel
 ```
 
 ## Testing Expectations
 
 Add or update tests when you change:
 
-- data contracts or schema expectations
-- transformations or KPI logic
-- API contracts
-- CLI behavior
-- runtime orchestration or artifact generation
-- warehouse query behavior
+- schema or contract rules
+- transformations or KPI calculations
+- runtime artifact generation
+- API or CLI behavior
+- warehouse logic
+- operational summaries or run history
+- compatibility shims
 
-For bug fixes, add a regression test whenever practical.
+Regression fixes should include a reproducing test whenever practical.
 
 ## Documentation Expectations
 
 Update documentation when you change:
 
 - repository structure
-- environment variables
 - CLI or API surfaces
-- operational behavior
-- architecture or processing flow
+- environment variables
+- execution flow or operational behavior
+- compatibility policy
+- user-facing dashboard behavior
 
-Minimum docs to consider:
+Minimum documentation surfaces to review:
 
 - [README.md](/C:/Users/samue/PycharmProjects/amazon-sales-analysis/README.md)
 - [docs/REPOSITORY_STRUCTURE.md](/C:/Users/samue/PycharmProjects/amazon-sales-analysis/docs/REPOSITORY_STRUCTURE.md)
@@ -90,19 +106,20 @@ Minimum docs to consider:
 
 ## Pull Request Standard
 
-A good PR should make it easy to answer:
+A PR should answer, concretely:
 
 - what changed
 - why it changed
-- what risks were introduced
-- how it was validated
-- what follow-up work remains, if any
+- what technical risks exist
+- how the change was validated
+- what documentation was updated
+- what follow-up work remains
 
-Use the PR template and keep evidence concrete.
+Avoid vague statements such as "production-ready" or "improved architecture" without evidence.
 
 ## Review Standard
 
-Reviews should prioritize:
+Reviews should focus on:
 
 - correctness
 - regression risk
@@ -111,17 +128,19 @@ Reviews should prioritize:
 - maintainability
 - documentation drift
 
-## What Not to Do
+## What Not To Do
 
-- Do not commit generated local artifacts unnecessarily
-- Do not introduce architecture layers without operational value
-- Do not bypass tests for behavior changes
-- Do not hide uncertainty behind broad claims of "production-ready"
+- Do not commit local runtime artifacts unless they are intentionally versioned examples.
+- Do not move logic into notebooks or scripts for convenience.
+- Do not add abstractions without a concrete runtime or maintenance benefit.
+- Do not hide uncertain behavior behind broad exception handling.
+- Do not bypass validation because a change looks small.
 
-## Questions and Proposals
+## When To Open An Issue First
 
-For larger changes, prefer opening an issue or draft PR before implementation when:
+Prefer an issue or draft PR before implementation when:
 
-- the change affects multiple surfaces
-- contracts or public behavior will change
-- architectural direction is not obvious
+- the change affects multiple execution surfaces
+- a contract or public API changes
+- the package layout is being reorganized
+- the proposal introduces new infrastructure or dependencies

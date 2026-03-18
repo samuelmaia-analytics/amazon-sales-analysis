@@ -7,6 +7,7 @@ body:
     id: severity
     attributes:
       label: Severity
+      description: Classify the production and maintenance impact.
       options:
         - critical
         - high
@@ -20,11 +21,12 @@ body:
       label: Affected surface
       options:
         - pipeline
-        - api
+        - validation
         - warehouse
+        - api
         - streamlit
-        - tests
-        - docs
+        - automation
+        - documentation
     validations:
       required: true
   - type: textarea
@@ -65,7 +67,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Documentation references:
-        - International: `README.md`
-        - PT-BR: `docs/README.pt-BR.md`
-        - PT-PT: `docs/README.pt-PT.md`
+        Review the main docs before opening larger defects tied to workflow or architecture:
+        - `README.md`
+        - `docs/REPOSITORY_STRUCTURE.md`
+        - `CONTRIBUTING.md`

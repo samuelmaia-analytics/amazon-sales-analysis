@@ -1,25 +1,34 @@
 ## Context
 
-- What problem does this PR solve?
-- Why is this change needed now?
+- What problem does this change solve?
+- Why is the change needed now?
 
-## Docs
+## Scope
 
-- [ ] README language variants reviewed when user-facing documentation changed
+- Affected surfaces:
+- Out-of-scope items:
 
 ## Change Summary
 
-- Main code changes:
+- Code changes:
+- Data or contract changes:
+- Operational behavior changes:
 - Documentation changes:
-- Operational or data contract changes:
 
 ## Validation
 
 - [ ] `black --check .`
 - [ ] `isort --check-only .`
 - [ ] `ruff check .`
-- [ ] `mypy src scripts app alerts`
-- [ ] `pytest`
+- [ ] `mypy src tests app alerts scripts`
+- [ ] `pytest -q`
+- [ ] `python -m build --sdist --wheel`
+
+## Documentation Review
+
+- [ ] `README.md` reviewed when behavior or structure changed
+- [ ] `docs/REPOSITORY_STRUCTURE.md` reviewed when package layout changed
+- [ ] multilingual READMEs reviewed when user-facing behavior changed
 
 ## Risk Review
 
@@ -30,7 +39,7 @@
 
 ## Evidence
 
-- Relevant logs, screenshots, outputs, or metrics:
+- Logs, screenshots, metrics, test output, or manifest excerpts:
 
 ## Follow-up
 

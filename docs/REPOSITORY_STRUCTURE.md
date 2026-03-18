@@ -1,8 +1,20 @@
 # Repository Structure
 
-This document describes the current repository topology and where production-oriented logic should live.
+This document describes the intended repository topology and the placement rules behind it. The goal is not only cleanliness; it is to keep operational concerns, analytical logic, and execution surfaces easy to understand and evolve.
 
-## Top-Level Layout
+## Architecture Intent
+
+The repository is organized around five concerns:
+
+- runtime and configuration
+- domain logic
+- execution surfaces
+- generated artifacts
+- contribution and automation metadata
+
+That separation keeps the codebase readable while still looking like a small real data platform instead of a loose collection of scripts.
+
+## Top-Level Blueprint
 
 ```text
 .
@@ -19,176 +31,141 @@ This document describes the current repository topology and where production-ori
 |-- sql/
 |-- src/
 |-- tests/
+|-- .env.example
 |-- CHANGELOG.md
 |-- CONTRIBUTING.md
 |-- Dockerfile
 |-- Makefile
 |-- README.md
 |-- main.py
-|-- pyproject.toml
-|-- scenario_simulation.py
-`-- streamlit_app.py
+`-- pyproject.toml
 ```
 
-## `.github/`
+Local environment folders such as `.venv/`, `.pytest_cache/`, `build/`, and `dist/` are intentionally excluded from this blueprint because they are not part of the source architecture.
 
-Repository automation and contribution workflow:
+## Top-Level Directories
 
-- `workflows/ci.yml`
-- `workflows/release.yml`
-- `ISSUE_TEMPLATE/`
-- `PULL_REQUEST_TEMPLATE.md`
+### `.github/`
+
+Repository governance and automation:
+
+- GitHub Actions workflows
+- issue templates
+- PR template
 - `CODEOWNERS`
 
-## `alerts/`
+### `alerts/`
 
-Thin alert-related script surface:
+Thin alert-specific wrappers kept outside the core package for operational convenience.
 
-- `discount_spike_alert.py`
+### `app/`
 
-## `app/`
-
-Application-facing entry points:
+Application entry points:
 
 - `api.py`
-  FastAPI surface for health, metrics, alerts, warehouse queries, and run history.
+  FastAPI service for health, metrics, alerts, warehouse access, and run history.
 - `streamlit_app.py`
-  Streamlit dashboard surface.
-- `__init__.py`
-  Path bootstrap for local execution.
+  Streamlit dashboard for analytical and operational visibility.
 
-## `assets/`
+### `assets/`
 
-Static assets used by the app and presentation layer:
+Static assets used by presentation layers, such as CSS and brand visuals.
 
-- `amazon_logo.svg`
-- `custom.css`
+### `contracts/`
 
-## `contracts/`
+Versioned or generated contract artifacts that describe important dataset expectations.
 
-Generated or versioned contract artifacts:
+### `data/`
 
-- `sales_dataset.contract.json`
-- `product_metrics.contract.json`
-
-## `data/`
-
-Local runtime storage. Not all layers need to exist ahead of execution; some are created from configuration.
+Local runtime storage for pipeline inputs and outputs:
 
 - `raw/`
-  Raw landed dataset from Kaggle.
 - `bronze/`
-  Snapshot of raw inputs by run.
 - `silver/`
-  Cleaned and validated snapshots.
 - `gold/`
-  Analytics-ready mart snapshots.
 - `warehouse/`
-  DuckDB file and warehouse query artifacts.
 - `processed/`
-  Stable processed dataset used by API and downstream flows.
-- `external/`
-  Reserved for externally managed inputs when needed.
 
-## `docs/`
+These directories are operational artifacts, not business logic.
 
-Repository documentation:
+### `docs/`
 
-- `README.en.md`
-- `README.pt-BR.md`
-- `README.pt-PT.md`
-- `REPOSITORY_STRUCTURE.md`
+Repository-level documentation, multilingual overviews, and structure guidance.
 
-## `notebooks/`
+### `notebooks/`
 
-Exploratory and supporting analysis only:
+Exploratory analysis only. Notebook content must not be the source of truth for reusable production logic.
 
-- `01_exploratory_analysis.ipynb`
-- `02_feature_engineering.ipynb`
-- `03_modeling.ipynb`
+### `reports/`
 
-Notebook code should not be treated as the source of truth for production logic.
+Generated outputs and operational artifacts:
 
-## `reports/`
+- figures
+- tables
+- metrics
+- run manifests
+- run status
+- operational summaries
 
-Generated outputs and execution artifacts:
+### `scripts/`
 
-- `figures/`
-- `tables/`
-- `metrics/`
-- `runs/`
+Thin wrappers around package entry points. Scripts should orchestrate; they should not own domain logic.
 
-## `scripts/`
+### `sql/`
 
-Wrapper scripts around package entry points:
+Versioned SQL assets used by the warehouse layer.
 
-- `run_pipeline.py`
-- `run_alerts.py`
-- `run_scenario_simulator.py`
-- `bump_version.py`
+### `src/`
 
-## `sql/`
+The source of truth for reusable application and platform logic.
 
-Warehouse-facing SQL assets:
+### `tests/`
 
-- `gold_commercial_mart.sql`
-- `warehouse_validation.sql`
+Automated validation for behavior, contracts, and operational guarantees.
 
-## `src/amazon_sales_analysis/`
+## Python Package Layout
 
-The main Python package. This is where reusable production logic belongs.
+The main package lives under [`src/amazon_sales_analysis`](/C:/Users/samue/PycharmProjects/amazon-sales-analysis/src/amazon_sales_analysis).
 
-### Core runtime and configuration
+### Runtime and shared infrastructure
 
-- `__init__.py`
 - `config.py`
-- `logging_config.py`
-- `operations.py`
+  Environment-aware settings and directory resolution.
 - `pipelines/runtime.py`
-
-### Compatibility shims
-
-- `data_ingestion.py`
-- `data_preprocessing.py`
-- `contracts.py`
-- `logging_config.py`
-- `metrics.py`
-- `quality.py`
-- `run_history.py`
-- `warehouse.py`
-- `warehouse_service.py`
-
-These preserve backward-compatible import paths while the real implementation lives in domain packages below.
+  Run context, manifests, status tracking, and atomic artifact persistence.
+- `operations.py`
+  Compatibility export for operational summary helpers.
 
 ### Domain packages
 
-- `ingestion/data_ingestion.py`
-- `transformations/data_preprocessing.py`
-- `validation/contracts.py`
-- `validation/schema.py`
-- `validation/quality.py`
-- `observability/logging_config.py`
-- `observability/metrics.py`
-- `serving/warehouse.py`
-- `serving/warehouse_service.py`
-- `serving/run_history.py`
-- `serving/operations.py`
+- `ingestion/`
+  Raw acquisition and landing.
+- `transformations/`
+  Cleaning, normalization, deduplication, and processed outputs.
+- `validation/`
+  Contracts, schema enforcement, and quality gates.
+- `observability/`
+  Logging, metric packaging, and KPI regression controls.
+- `serving/`
+  Warehouse materialization, warehouse access, run history, and operational summaries.
 
-### Analytical logic
+### Analytical modules
 
-- `feature_engineering.py`
-- `business_metrics.py`
-- `sales_analysis.py`
+These modules represent business-facing logic that consumes curated data and produces insights, simulations, tables, or models:
+
 - `analytics.py`
+- `anomaly_detection.py`
+- `business_metrics.py`
+- `decision_engine.py`
 - `eda.py`
 - `evaluation.py`
+- `feature_engineering.py`
 - `insights.py`
-- `decision_engine.py`
 - `modeling.py`
+- `sales_analysis.py`
+- `scenario_simulator.py`
 - `table_organization.py`
 - `visualization.py`
-- `scenario_simulator.py`
-- `anomaly_detection.py`
 
 ### CLI surfaces
 
@@ -197,33 +174,49 @@ These preserve backward-compatible import paths while the real implementation li
 - `cli/scenario.py`
 - `cli/warehouse.py`
 
-## `tests/`
+CLI modules should remain thin and delegate work to reusable package logic.
 
-Automated coverage for:
+### Compatibility shims
 
-- contracts and preprocessing
-- quality gates
-- metrics and modeling
-- runtime orchestration
-- API behavior
-- warehouse behavior
-- execution history
+The package root still exposes modules such as:
 
-## Dataset Source
+- `contracts.py`
+- `data_ingestion.py`
+- `data_preprocessing.py`
+- `logging_config.py`
+- `metrics.py`
+- `quality.py`
+- `run_history.py`
+- `warehouse.py`
+- `warehouse_service.py`
 
-Configured in `src/amazon_sales_analysis/config.py`:
+These exist to preserve stable import paths while the repository evolves toward the domain-oriented layout.
 
-- Kaggle dataset: `aliiihussain/amazon-sales-dataset`
-- Retrieval package: `kagglehub`
+Rules for shims:
 
-Local landing path:
-
-- `data/raw/amazon_sales/amazon_sales_dataset.csv`
+- prefer domain packages in new code
+- keep exports explicit
+- protect public shim behavior with tests
+- document deprecation before removal
 
 ## Placement Rules
 
-- Put reusable logic in `src/`, not in notebooks or scripts
-- Put generated outputs in `reports/` or `data/`, not in `src/`
-- Put warehouse SQL in `sql/`
-- Keep GitHub workflow and contribution metadata in `.github/`
-- Keep exploratory work isolated in `notebooks/`
+- Put reusable logic in `src/`, not in `scripts/` or `notebooks/`.
+- Put warehouse SQL in `sql/`, not inline in the app layer when it needs to be versioned.
+- Put generated artifacts in `data/` or `reports/`, not under source folders.
+- Keep API, Streamlit, and CLI surfaces thin.
+- Keep architecture and contribution standards updated when the layout changes.
+
+## Dataset Source
+
+- Kaggle dataset: `aliiihussain/amazon-sales-dataset`
+- Retrieval package: `kagglehub`
+- Local raw landing path: `data/raw/amazon_sales/amazon_sales_dataset.csv`
+
+## What This Structure Optimizes For
+
+- easier onboarding for technical reviewers
+- lower coupling between execution surfaces and core logic
+- clearer ownership of validation and observability concerns
+- safer package evolution without breaking existing imports
+- a repository shape that looks intentional under hiring review

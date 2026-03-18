@@ -1,4 +1,4 @@
-# Amazon Sales Analytics Platform (International)
+# Amazon Sales Analytics Platform (International Guide)
 
 ## Language Switch
 
@@ -6,35 +6,36 @@
 - PT-BR: [README.pt-BR.md](README.pt-BR.md)
 - PT-PT: [README.pt-PT.md](README.pt-PT.md)
 - Contributing: [../CONTRIBUTING.md](../CONTRIBUTING.md)
-- Structure guide: [REPOSITORY_STRUCTURE.md](REPOSITORY_STRUCTURE.md)
+- Repository structure: [REPOSITORY_STRUCTURE.md](REPOSITORY_STRUCTURE.md)
 
-## Summary
+## Purpose
 
-This repository is no longer just a notebook-style sales analysis. It is a small but production-oriented analytics system with:
+This document is the international quick guide for the repository. The canonical architectural and contribution standards live in the main [README](../README.md) and in [CONTRIBUTING.md](../CONTRIBUTING.md).
 
-- raw-to-bronze/silver/gold data layers
-- schema contracts and quality gates
-- run manifests with lineage, hashes, and dataset profiles
-- optional DuckDB materialization for the gold mart
-- FastAPI endpoints for metrics, alerts, warehouse queries, and run-history comparison
-- readiness checks for processed data and analytical query availability
-- CLI entry points for pipeline, alerts, scenarios, and warehouse operations
+The platform is designed to demonstrate a small but credible data system with:
+
+- reproducible batch execution
+- layered raw-to-curated data processing
+- contract and quality enforcement
+- KPI regression controls across runs
+- analytical serving through API, CLI, and Streamlit
+- operational visibility through manifests, run status, and summaries
 
 ## Dataset Source
 
 - Kaggle dataset: `aliiihussain/amazon-sales-dataset`
-- Downloaded through `kagglehub`
+- Retrieval package: `kagglehub`
 - Raw landing path: `data/raw/amazon_sales/amazon_sales_dataset.csv`
 
-## What It Solves
+## Business Questions
 
-The project is designed to answer recurring commercial questions such as:
+The project is structured to answer commercial questions such as:
 
 - how much revenue was generated and how much was lost to discount leakage
 - which categories concentrate revenue and promotional pressure
-- whether monthly momentum is accelerating or declining
-- where discount spikes require operational follow-up
-- how KPIs changed between the latest pipeline runs
+- where discount spikes require follow-up
+- whether commercial KPIs are stable or drifting
+- whether the latest execution produced reliable analytical outputs
 
 ## Architecture Snapshot
 
@@ -47,77 +48,73 @@ data/
 `-- warehouse/
 
 reports/
-|-- tables/
-|-- metrics/
 |-- figures/
-`-- runs/<run_id>/execution_manifest.json
+|-- metrics/
+|-- runs/
+`-- tables/
 ```
 
 Domain packages:
 
-- `ingestion/`: raw dataset acquisition and local landing reuse
-- `transformations/`: loading, cleaning, normalization, and processed outputs
-- `validation/`: contracts, schema checks, and quality gates
-- `observability/`: logging, KPI packaging, and regression controls
-- `serving/`: warehouse materialization, query services, run history, and operational summaries
-- `pipelines/`: artifact and manifest runtime helpers
+- `ingestion/`
+  raw dataset acquisition and landing reuse
+- `transformations/`
+  cleaning, normalization, deduplication, and processed outputs
+- `validation/`
+  contracts, schema enforcement, and quality gates
+- `observability/`
+  logging, metrics packaging, and KPI regression controls
+- `serving/`
+  warehouse materialization, run history, and operational summaries
+- `pipelines/`
+  shared runtime helpers for manifests, status, and artifact persistence
 
-Compatibility policy:
+## Execution Surfaces
 
-- Top-level modules such as `data_ingestion.py`, `metrics.py`, and `warehouse.py` are explicit compatibility shims.
-- New code should import from the domain packages.
-- Shim exports are kept stable and validated by distribution contract tests.
-
-## Run
+CLI:
 
 ```bash
-python -m pip install -e .[dev]
 amazon-sales-pipeline
 amazon-sales-pipeline --force-download
 amazon-sales-pipeline --fail-on-kpi-regression
-```
-
-Additional entry points:
-
-```bash
 amazon-sales-alerts
 amazon-sales-scenario
-amazon-sales-warehouse
-uvicorn app.api:app --reload
-streamlit run app/streamlit_app.py
-```
-
-## Warehouse Queries
-
-```bash
-amazon-sales-warehouse --export-category-revenue
-amazon-sales-warehouse --show-run-history
-amazon-sales-warehouse --compare-latest-runs
 amazon-sales-warehouse --show-operational-summary
 ```
 
-API endpoints:
+API:
 
+- `GET /health`
+- `GET /health/ready`
 - `GET /metrics/summary`
-- `GET /alerts/discount-spikes`
 - `GET /warehouse/category-revenue`
 - `GET /pipeline/runs`
 - `GET /pipeline/runs/compare-latest`
 - `GET /operations/latest`
-- `GET /health/ready`
 
-## Engineering Characteristics
+Dashboard:
 
-- Idempotent outputs for main artifacts
-- Atomic writes for critical CSV/JSON artifacts
-- Local raw dataset reuse for reprocessing
-- Quality checks for domains, freshness, and business-key uniqueness
-- Per-run manifests with hashes, row counts, and dataset profiles
-- Optional local warehouse with versioned SQL assets
-- KPI drift comparison across recent runs
-- Drift severity classification (`stable`, `medium`, `high`, `critical`)
+- Streamlit exposes both analytical KPIs and operational run visibility.
 
-## Quality Commands
+## Runtime and Reliability
+
+Implemented guarantees:
+
+- deterministic artifact layout by `run_id`
+- local raw-file reuse for controlled reprocessing
+- atomic writes for critical CSV and JSON artifacts
+- curated dataset quality gates
+- KPI regression comparison against a stored baseline
+- local warehouse materialization when DuckDB is available
+
+## Engineering Decisions
+
+- The repository stays local-first instead of simulating cloud infrastructure without operational value.
+- API, CLI, and dashboard layers are thin and rely on shared package logic.
+- Compatibility shims remain available to preserve stable import paths during package evolution.
+- Operational artifacts are stored locally to keep the project reproducible and easy to inspect.
+
+## Validation Workflow
 
 ```bash
 make quality
@@ -125,23 +122,22 @@ make test
 make build-check
 ```
 
-## Validation Status
-
-Current repository validation includes:
+Validation currently includes:
 
 - `ruff check .`
 - `mypy src tests app alerts scripts`
-- `pytest`
+- `pytest -q`
 - `python -m build --sdist --wheel`
 
 ## Trade-offs
 
-- No external orchestrator or centralized observability stack
-- DuckDB is local and optional, not a distributed warehouse
-- Run history is based on local manifests rather than remote telemetry
+- no external scheduler or orchestrator
+- no centralized telemetry backend
+- no remote metadata store
+- no fully incremental warehouse strategy yet
 
-## Automation
+## Next References
 
-- Pull requests and pushes run lint, type checks, tests, and package build validation
-- Release tags re-run the same quality gate before publishing
-- CI can be scheduled to provide recurring validation even without new commits
+- Main overview: [../README.md](../README.md)
+- Contribution guide: [../CONTRIBUTING.md](../CONTRIBUTING.md)
+- Structure guide: [REPOSITORY_STRUCTURE.md](REPOSITORY_STRUCTURE.md)
