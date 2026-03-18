@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from .config import TABLES_DIR
+from .config import get_settings
 
 
 def detect_discount_spikes(
@@ -70,7 +70,7 @@ def detect_discount_spikes(
 
 
 def export_discount_spike_alerts(alerts: pd.DataFrame, output_path: Path | None = None) -> Path:
-    target = output_path or (TABLES_DIR / "discount_spike_alerts.csv")
+    target = output_path or (get_settings().tables_dir / "discount_spike_alerts.csv")
     target.parent.mkdir(parents=True, exist_ok=True)
     alerts.to_csv(target, index=False)
     return target

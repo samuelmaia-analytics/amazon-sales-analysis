@@ -2,6 +2,7 @@ import pandas as pd
 
 from .data_preprocessing import audit_data_quality
 from .insights import generate_executive_insights
+from .quality import summarize_quality_gates
 from .sales_analysis import build_executive_report, prepare_sales_frame
 
 
@@ -21,4 +22,5 @@ def build_executive_tables(df: pd.DataFrame) -> dict[str, pd.DataFrame]:
         "insights_summary": report.insights,
         "kpi_catalog": report.kpi_catalog,
         "data_quality_audit": audit_data_quality(prepared),
+        "quality_gate_summary": summarize_quality_gates(prepared),
     }

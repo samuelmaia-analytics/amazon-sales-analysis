@@ -1,6 +1,6 @@
 PYTHON ?= python
 
-.PHONY: setup-dev quality test pipeline alerts scenario
+.PHONY: setup-dev quality test pipeline alerts scenario warehouse
 
 setup-dev:
 	$(PYTHON) -m pip install -e .[dev]
@@ -22,3 +22,6 @@ alerts:
 
 scenario:
 	$(PYTHON) -m amazon_sales_analysis.cli.scenario
+
+warehouse:
+	$(PYTHON) -m amazon_sales_analysis.cli.warehouse --export-category-revenue

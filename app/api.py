@@ -10,8 +10,10 @@ from fastapi import FastAPI, HTTPException
 from amazon_sales_analysis import __version__
 from amazon_sales_analysis.analytics import add_derived_metrics, summarize_kpis
 from amazon_sales_analysis.anomaly_detection import detect_discount_spikes
-from amazon_sales_analysis.config import PROCESSED_DATA_DIR, TABLES_DIR
+from amazon_sales_analysis.config import PROCESSED_DATA_DIR, TABLES_DIR, get_settings
 from amazon_sales_analysis.modeling import rank_discount_opportunities
+from amazon_sales_analysis.run_history import compare_latest_runs, summarize_run_history
+from amazon_sales_analysis.warehouse_service import query_category_revenue, warehouse_query_metadata
 
 DATASET_PATH = PROCESSED_DATA_DIR / "amazon_sales_clean.csv"
 ALERTS_PATH = TABLES_DIR / "discount_spike_alerts.csv"
@@ -46,8 +48,31 @@ def _load_processed_data() -> pd.DataFrame:
 
 
 @app.get("/health")
-def health() -> dict[str, str]:
-    return {"status": "ok"}
+def health() -> dict[str, Any]:
+    settings = get_settings()
+    return {
+        "status": "ok",
+        "version": __version__,
+        "processed_dataset_available": DATASET_PATH.exists(),
+        "alerts_snapshot_available": ALERTS_PATH.exists(),
+        "warehouse_db_available": settings.warehouse_db_path.exists(),
+    }
+
+
+@app.get("/health/ready")
+def readiness() -> dict[str, Any]:
+    settings = get_settings()
+    checks = {
+        "processed_dataset_available": DATASET_PATH.exists(),
+        "warehouse_query_layer_available": (
+            settings.warehouse_db_path.exists() or any(settings.gold_data_dir.glob("*_commercial_mart.csv"))
+        ),
+    }
+    is_ready = all(checks.values())
+    return {
+        "status": "ready" if is_ready else "degraded",
+        "checks": checks,
+    }
 
 
 @app.get("/metrics/summary")
@@ -91,3 +116,29 @@ def discount_spikes() -> list[dict[str, Any]]:
         return []
     alerts["order_date"] = pd.to_datetime(alerts["order_date"]).dt.date.astype(str)
     return cast(list[dict[str, Any]], alerts.to_dict(orient="records"))
+
+
+@app.get("/warehouse/category-revenue")
+def warehouse_category_revenue() -> dict[str, Any]:
+    try:
+        result = query_category_revenue()
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    return {
+        "metadata": warehouse_query_metadata(),
+        "rows": cast(list[dict[str, Any]], result.to_dict(orient="records")),
+    }
+
+
+@app.get("/pipeline/runs")
+def pipeline_runs(limit: int = 5) -> dict[str, Any]:
+    return {"runs": summarize_run_history(limit=limit)}
+
+
+@app.get("/pipeline/runs/compare-latest")
+def pipeline_compare_latest() -> dict[str, Any]:
+    try:
+        return compare_latest_runs()
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc

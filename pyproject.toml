@@ -9,6 +9,7 @@ description = "Business-focused sales analytics pipeline with quality gates and 
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "duckdb>=1.1.0",
     "fastapi>=0.115.0",
     "kagglehub>=0.1.0",
     "matplotlib>=3.7.0",
@@ -36,6 +37,7 @@ dev = [
 amazon-sales-pipeline = "amazon_sales_analysis.cli.pipeline:main"
 amazon-sales-alerts = "amazon_sales_analysis.cli.alerts:main"
 amazon-sales-scenario = "amazon_sales_analysis.cli.scenario:main"
+amazon-sales-warehouse = "amazon_sales_analysis.cli.warehouse:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

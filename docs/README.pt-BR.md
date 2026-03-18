@@ -1,92 +1,132 @@
-# Amazon Sales Analysis (PT-BR)
+# Amazon Sales Analytics Pipeline (PT-BR)
 
 ## Troca de Idioma
 - README principal: [../README.md](../README.md)
 - International: [README.en.md](README.en.md)
 
 ## Resumo
-- Problema de negocio: leakage de desconto reduzindo a receita liquida.
-- Publico-alvo: lideranca comercial, gestores de categoria e operacoes.
-- North Star Metric: Net Revenue Retained (NRR).
-- Potencial financeiro: +$252,3K ao recuperar 5% do leakage.
 
-## Snapshot de Metricas
-- Receita Liquida: **$32,87M**
-- Leakage de Desconto: **$5,05M**
-- North Star (NRR): **86,69%**
-- Upside com 5% de recuperacao: **+$252,3K**
+Este repositório deixou de ser apenas uma análise exploratória de vendas. Hoje ele funciona como um sistema analítico pequeno, mas orientado a produção, com:
 
-## Escopo do Projeto
-Este projeto entrega uma stack analitica orientada a negocio para operacoes de vendas no estilo Amazon:
-- pipeline reproduzivel com contratos de schema e quality gates;
-- feature engineering para KPIs executivos e metricas de leakage;
-- endpoints FastAPI para metricas consolidadas e alertas operacionais;
-- dashboard Streamlit com selecao de idioma `International` e `PT-BR`;
-- simulador de cenarios e alertas de anomalia para revisao executiva.
+- camadas `raw`, `bronze`, `silver` e `gold`
+- contratos de schema e quality gates
+- manifests de execução com lineage, hashes e perfil de dataset
+- materialização opcional do mart em DuckDB
+- endpoints FastAPI para métricas, alertas, consultas analíticas e comparação entre execuções
+- checks de readiness para dataset processado e disponibilidade da camada analítica
+- CLIs para pipeline, alertas, cenários e operações de warehouse
+
+## O Que o Projeto Resolve
+
+O projeto foi estruturado para responder perguntas recorrentes de operação comercial, como:
+
+- quanto revenue foi gerado e quanto foi perdido por leakage de desconto
+- quais categorias concentram receita e pressão promocional
+- se a tendência mensal está acelerando ou caindo
+- onde existem spikes de desconto que exigem ação
+- como os KPIs mudaram entre a última execução e a anterior
+
+## Visão de Arquitetura
+
+```text
+data/
+|-- raw/
+|-- bronze/
+|-- silver/
+|-- gold/
+`-- warehouse/
+
+reports/
+|-- tables/
+|-- metrics/
+|-- figures/
+`-- runs/<run_id>/execution_manifest.json
+```
+
+Módulos centrais:
+
+- `config.py`: configuração por ambiente
+- `data_ingestion.py`: obtenção/reuso da camada bruta
+- `data_preprocessing.py`: limpeza, normalização e deduplicação
+- `quality.py`: quality gates com freshness e unicidade de chave de negócio
+- `warehouse.py`: materialização do mart em DuckDB
+- `warehouse_service.py`: serving de consultas com fallback DuckDB-ou-CSV
+- `run_history.py`: histórico de execuções e comparação de drift de KPIs
 
 ## Como Executar
+
 ```bash
-git clone https://github.com/samuelmaia-analytics/amazon-sales-analysis.git
-cd amazon-sales-analysis
 python -m pip install -e .[dev]
-pre-commit install
-python -m amazon_sales_analysis.cli.pipeline
+amazon-sales-pipeline
+```
+
+Entrypoints adicionais:
+
+```bash
+amazon-sales-alerts
+amazon-sales-scenario
+amazon-sales-warehouse
 uvicorn app.api:app --reload
 streamlit run app/streamlit_app.py
 ```
 
-## Scripts de Console
+## Consultas de Warehouse
+
+Exportar receita por categoria:
+
 ```bash
-python -m pip install .
-amazon-sales-pipeline
-amazon-sales-alerts
-amazon-sales-scenario
+amazon-sales-warehouse --export-category-revenue
 ```
+
+Inspecionar histórico de runs:
+
+```bash
+amazon-sales-warehouse --show-run-history
+amazon-sales-warehouse --compare-latest-runs
+```
+
+Endpoints disponíveis:
+
+- `GET /metrics/summary`
+- `GET /alerts/discount-spikes`
+- `GET /warehouse/category-revenue`
+- `GET /pipeline/runs`
+- `GET /pipeline/runs/compare-latest`
+- `GET /health/ready`
+
+## Características de Engenharia
+
+- Saídas idempotentes para os principais artefatos
+- Escrita atômica para CSVs e JSONs críticos
+- Reuso do dataset bruto local para reprocessamento
+- Validações de domínio, freshness e unicidade de chave de negócio
+- Manifest por execução com hashes, contagem de linhas e perfil dos datasets
+- Warehouse local opcional com SQL versionado
+- Comparação de drift de KPIs entre execuções recentes
+- Classificação de severidade de drift (`stable`, `medium`, `high`, `critical`)
 
 ## Comandos de Qualidade
+
 ```bash
-python -m pip install -e .[dev]
-pre-commit run --all-files
-black --check .
-isort --check-only src scripts app alerts tests main.py streamlit_app.py scenario_simulation.py
-ruff check .
-mypy src scripts app alerts tests
-pytest
+make quality
+make test
 ```
 
-## CI e Governanca
-- A CI valida formatacao, lint, tipagem, testes e cobertura (`>=70%`).
-- O workflow de release verifica consistencia entre versao e changelog antes de publicar.
-- Templates de PR e issue estao disponiveis em `.github/`.
-- CODEOWNERS foi configurado para governanca do repositorio.
+## Status de Validação
 
-## Exemplos de API
-`GET /api/v1/revenue_metrics` (exemplo)
-```json
-{
-  "total_revenue": 32866579.536,
-  "gross_revenue": 37913104.54000001,
-  "discount_leakage": 5046525.004000008,
-  "north_star_nrr": 0.866892330099855,
-  "total_orders": 50000.0,
-  "avg_ticket": 657.33159072
-}
-```
+O repositório é validado com:
 
-`GET /alerts/discount-spikes` (exemplo)
-```json
-[
-  {
-    "order_date": "2022-10-31",
-    "product_category": "Fashion",
-    "z_score": 2.696544107570046,
-    "estimated_leakage_usd": 933.6917756183568,
-    "severity": "medium"
-  }
-]
-```
+- `ruff check .`
+- `mypy src tests app alerts scripts`
+- `pytest`
+
+## Trade-offs
+
+- Não há orquestrador externo nem observabilidade centralizada
+- O DuckDB é local e opcional, não um warehouse distribuído
+- O histórico de runs é baseado em manifests locais, não em telemetry remota
 
 ## Contato
+
 - GitHub: https://github.com/samuelmaia-analytics
 - LinkedIn: https://linkedin.com/in/samuelmaia-analytics
-- Email: smaia2@gmail.com

@@ -1,13 +1,14 @@
 from __future__ import annotations
 
-import json
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 
-from .config import METRICS_DIR
+from .config import get_settings
 from .insights import generate_executive_insights
+from .pipelines.runtime import write_json_artifact
 from .sales_analysis import build_executive_report, prepare_sales_frame
 
 PRODUCT_METRICS_VERSION = "2.0.0"
@@ -31,7 +32,12 @@ def collect_product_metrics(
     date_start = min_date.date().isoformat() if pd.notna(min_date) else ""
     date_end = max_date.date().isoformat() if pd.notna(max_date) else ""
 
-    metrics: dict[str, float | int | str | list[dict[str, str]]] = {
+    headline_insights = [
+        {str(key): str(value) for key, value in record.items()}
+        for record in insights.to_dict(orient="records")
+    ]
+
+    metrics: dict[str, Any] = {
         "metrics_version": PRODUCT_METRICS_VERSION,
         "contract_version": contract_version,
         "pipeline_version": pipeline_version,
@@ -51,7 +57,7 @@ def collect_product_metrics(
         ),
         "period_start": date_start,
         "period_end": date_end,
-        "headline_insights": insights.to_dict(orient="records"),
+        "headline_insights": headline_insights,
     }
     return metrics
 
@@ -59,7 +65,6 @@ def collect_product_metrics(
 def save_product_metrics(
     metrics: dict[str, float | int | str | list[dict[str, str]]], output_path: Path | None = None
 ) -> Path:
-    METRICS_DIR.mkdir(parents=True, exist_ok=True)
-    target = output_path or (METRICS_DIR / "product_metrics.json")
-    target.write_text(json.dumps(metrics, indent=2), encoding="utf-8")
-    return target
+    target = output_path or (get_settings().metrics_dir / "product_metrics.json")
+    target.parent.mkdir(parents=True, exist_ok=True)
+    return write_json_artifact(metrics, target)

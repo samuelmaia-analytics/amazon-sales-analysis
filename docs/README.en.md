@@ -1,92 +1,132 @@
-# Amazon Sales Analysis (International)
+# Amazon Sales Analytics Pipeline (International)
 
 ## Language Switch
 - Main README: [../README.md](../README.md)
 - PT-BR: [README.pt-BR.md](README.pt-BR.md)
 
 ## Summary
-- Business problem: discount leakage reducing net revenue.
-- Audience: revenue leaders, category managers, and operations teams.
-- North Star Metric: Net Revenue Retained (NRR).
-- Value case: +$252.3K at 5% leakage recovery.
 
-## Business Metrics Snapshot
-- Net Revenue: **$32.87M**
-- Discount Leakage: **$5.05M**
-- North Star (NRR): **86.69%**
-- Upside at 5% leakage recovery: **+$252.3K**
+This repository is no longer just a notebook-style sales analysis. It is a small but production-oriented analytics system with:
 
-## Project Scope
-This project delivers a business-facing analytics stack for Amazon-like sales operations:
-- reproducible data pipeline with schema and quality gates;
-- feature engineering for executive KPIs and discount leakage metrics;
-- FastAPI endpoints for summary metrics and operational alerts;
-- Streamlit dashboard with `International` and `PT-BR` language selection;
-- scenario simulator and anomaly alerts for leadership review.
+- raw-to-bronze/silver/gold data layers
+- schema contracts and quality gates
+- run manifests with lineage, hashes, and dataset profiles
+- optional DuckDB materialization for the gold mart
+- FastAPI endpoints for metrics, alerts, warehouse queries, and run-history comparison
+- readiness checks for processed data and analytical query availability
+- CLI entry points for pipeline, alerts, scenarios, and warehouse operations
 
-## How to Run
+## What It Solves
+
+The project is designed to answer recurring commercial questions such as:
+
+- how much revenue was generated and how much was lost to discount leakage
+- which categories concentrate revenue and promotional pressure
+- whether monthly momentum is accelerating or declining
+- where discount spikes require operational follow-up
+- how KPIs changed between the latest pipeline runs
+
+## Architecture Snapshot
+
+```text
+data/
+|-- raw/
+|-- bronze/
+|-- silver/
+|-- gold/
+`-- warehouse/
+
+reports/
+|-- tables/
+|-- metrics/
+|-- figures/
+`-- runs/<run_id>/execution_manifest.json
+```
+
+Core modules:
+
+- `config.py`: environment-aware settings
+- `data_ingestion.py`: raw dataset retrieval/reuse
+- `data_preprocessing.py`: cleaning, normalization, deduplication
+- `quality.py`: quality gates including freshness and business-key uniqueness
+- `warehouse.py`: DuckDB mart materialization
+- `warehouse_service.py`: query-serving with DuckDB-or-CSV fallback
+- `run_history.py`: run summary and KPI drift comparison
+
+## Run
+
 ```bash
-git clone https://github.com/samuelmaia-analytics/amazon-sales-analysis.git
-cd amazon-sales-analysis
 python -m pip install -e .[dev]
-pre-commit install
-python -m amazon_sales_analysis.cli.pipeline
+amazon-sales-pipeline
+```
+
+Additional entry points:
+
+```bash
+amazon-sales-alerts
+amazon-sales-scenario
+amazon-sales-warehouse
 uvicorn app.api:app --reload
 streamlit run app/streamlit_app.py
 ```
 
-## Console Scripts
+## Warehouse Queries
+
+Export category revenue:
+
 ```bash
-python -m pip install .
-amazon-sales-pipeline
-amazon-sales-alerts
-amazon-sales-scenario
+amazon-sales-warehouse --export-category-revenue
 ```
+
+Inspect run history:
+
+```bash
+amazon-sales-warehouse --show-run-history
+amazon-sales-warehouse --compare-latest-runs
+```
+
+API endpoints:
+
+- `GET /metrics/summary`
+- `GET /alerts/discount-spikes`
+- `GET /warehouse/category-revenue`
+- `GET /pipeline/runs`
+- `GET /pipeline/runs/compare-latest`
+- `GET /health/ready`
+
+## Engineering Characteristics
+
+- Idempotent outputs for main artifacts
+- Atomic writes for critical CSV/JSON artifacts
+- Local raw dataset reuse for reprocessing
+- Quality checks for domains, freshness, and business-key uniqueness
+- Per-run manifests with hashes, row counts, and dataset profiles
+- Optional local warehouse with versioned SQL assets
+- KPI drift comparison across recent runs
+- Drift severity classification (`stable`, `medium`, `high`, `critical`)
 
 ## Quality Commands
+
 ```bash
-python -m pip install -e .[dev]
-pre-commit run --all-files
-black --check .
-isort --check-only src scripts app alerts tests main.py streamlit_app.py scenario_simulation.py
-ruff check .
-mypy src scripts app alerts tests
-pytest
+make quality
+make test
 ```
 
-## CI and Governance
-- CI validates formatting, linting, typing, tests, and coverage (`>=70%`).
-- Release workflow checks version/changelog consistency before publishing.
-- PR and issue templates are available in `.github/`.
-- CODEOWNERS is configured for repository governance.
+## Validation Status
 
-## API Examples
-`GET /api/v1/revenue_metrics` (sample)
-```json
-{
-  "total_revenue": 32866579.536,
-  "gross_revenue": 37913104.54000001,
-  "discount_leakage": 5046525.004000008,
-  "north_star_nrr": 0.866892330099855,
-  "total_orders": 50000.0,
-  "avg_ticket": 657.33159072
-}
-```
+Current repository validation includes:
 
-`GET /alerts/discount-spikes` (sample)
-```json
-[
-  {
-    "order_date": "2022-10-31",
-    "product_category": "Fashion",
-    "z_score": 2.696544107570046,
-    "estimated_leakage_usd": 933.6917756183568,
-    "severity": "medium"
-  }
-]
-```
+- `ruff check .`
+- `mypy src tests app alerts scripts`
+- `pytest`
+
+## Trade-offs
+
+- No external orchestrator or centralized observability stack
+- DuckDB is local and optional, not a distributed warehouse
+- Run history is based on local manifests rather than remote telemetry
 
 ## Contact
+
 - GitHub: https://github.com/samuelmaia-analytics
 - LinkedIn: https://linkedin.com/in/samuelmaia-analytics
-- Email: smaia2@gmail.com

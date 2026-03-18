@@ -118,3 +118,107 @@ def test_discount_spikes_falls_back_to_runtime_detection(tmp_path, monkeypatch) 
     payload = response.json()
     assert len(payload) == 1
     assert payload[0]["product_category"] == "Beauty"
+
+
+def test_warehouse_category_revenue_endpoint_uses_query_service(monkeypatch) -> None:
+    monkeypatch.setattr(
+        api,
+        "query_category_revenue",
+        lambda: pd.DataFrame(
+            {
+                "product_category": ["Beauty"],
+                "revenue": [90.0],
+                "orders": [1],
+                "avg_discount_percent": [10.0],
+            }
+        ),
+    )
+    monkeypatch.setattr(
+        api,
+        "warehouse_query_metadata",
+        lambda: {"warehouse_table": "gold_commercial_performance", "duckdb_available": False},
+    )
+    client = TestClient(api.app)
+
+    response = client.get("/warehouse/category-revenue")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["rows"][0]["product_category"] == "Beauty"
+    assert payload["metadata"]["warehouse_table"] == "gold_commercial_performance"
+
+
+def test_pipeline_runs_endpoint_returns_history(monkeypatch) -> None:
+    monkeypatch.setattr(
+        api,
+        "summarize_run_history",
+        lambda limit=5: [{"run_id": "run-1", "total_revenue": 100.0}],
+    )
+    client = TestClient(api.app)
+
+    response = client.get("/pipeline/runs")
+
+    assert response.status_code == 200
+    assert response.json()["runs"][0]["run_id"] == "run-1"
+
+
+def test_pipeline_compare_latest_returns_404_without_enough_runs(monkeypatch) -> None:
+    monkeypatch.setattr(
+        api, "compare_latest_runs", lambda: (_ for _ in ()).throw(ValueError("missing"))
+    )
+    client = TestClient(api.app)
+
+    response = client.get("/pipeline/runs/compare-latest")
+
+    assert response.status_code == 404
+
+
+def test_health_endpoint_reports_operational_flags(tmp_path, monkeypatch) -> None:
+    dataset_path = tmp_path / "amazon_sales_clean.csv"
+    alerts_path = tmp_path / "discount_spike_alerts.csv"
+    warehouse_db_path = tmp_path / "amazon_sales.duckdb"
+    dataset_path.write_text("order_id\n1\n", encoding="utf-8")
+    alerts_path.write_text("severity\nhigh\n", encoding="utf-8")
+    warehouse_db_path.write_text("db", encoding="utf-8")
+
+    api.DATASET_PATH = dataset_path
+    api.ALERTS_PATH = alerts_path
+    monkeypatch.setattr(
+        api,
+        "get_settings",
+        lambda: type("Settings", (), {"warehouse_db_path": warehouse_db_path})(),
+    )
+    client = TestClient(api.app)
+
+    response = client.get("/health")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["processed_dataset_available"] is True
+    assert payload["alerts_snapshot_available"] is True
+    assert payload["warehouse_db_available"] is True
+
+
+def test_readiness_endpoint_reports_degraded_when_inputs_are_missing(tmp_path, monkeypatch) -> None:
+    api.DATASET_PATH = tmp_path / "missing.csv"
+    api.ALERTS_PATH = tmp_path / "missing_alerts.csv"
+    monkeypatch.setattr(
+        api,
+        "get_settings",
+        lambda: type(
+            "Settings",
+            (),
+            {
+                "warehouse_db_path": tmp_path / "missing.duckdb",
+                "gold_data_dir": tmp_path / "gold",
+            },
+        )(),
+    )
+    client = TestClient(api.app)
+
+    response = client.get("/health/ready")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] == "degraded"
+    assert payload["checks"]["processed_dataset_available"] is False

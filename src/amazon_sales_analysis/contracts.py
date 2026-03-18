@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass
 from pathlib import Path
 
 import pandas as pd
 
-from .config import CONTRACTS_DIR
+from .config import get_settings
+from .pipelines.runtime import write_json_artifact
 
 RAW_REQUIRED_COLUMNS = {
     "order_id",
@@ -55,6 +55,5 @@ def export_contract_snapshot(*, contract_version: str, output_path: Path | None 
         "required_columns": sorted(RAW_REQUIRED_COLUMNS),
         "description": "Raw sales dataset contract expected by preprocessing pipeline.",
     }
-    target = output_path or (CONTRACTS_DIR / "sales_dataset.contract.json")
-    target.write_text(json.dumps(payload, indent=2), encoding="utf-8")
-    return target
+    target = output_path or (get_settings().contracts_dir / "sales_dataset.contract.json")
+    return write_json_artifact(payload, target)

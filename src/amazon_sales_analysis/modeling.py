@@ -1,7 +1,15 @@
-﻿import pandas as pd
+import pandas as pd
 
 
 def rank_discount_opportunities(df: pd.DataFrame, top_n: int = 10) -> pd.DataFrame:
+    required_columns = {"product_category", "total_revenue", "discount_value"}
+    missing_columns = required_columns - set(df.columns)
+    if missing_columns:
+        missing = ", ".join(sorted(missing_columns))
+        raise ValueError(f"Missing required columns for modeling: {missing}")
+    if top_n <= 0:
+        raise ValueError("top_n must be greater than 0")
+
     grouped = (
         df.groupby("product_category", as_index=False)
         .agg(total_revenue=("total_revenue", "sum"), discount_value=("discount_value", "sum"))

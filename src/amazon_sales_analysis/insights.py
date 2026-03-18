@@ -17,7 +17,9 @@ def generate_executive_insights(df: pd.DataFrame) -> pd.DataFrame:
     growth = analyze_growth_trends(prepared)
 
     total_revenue = float(prepared["total_revenue"].sum()) if not prepared.empty else 0.0
-    avg_ticket = total_revenue / float(prepared["order_id"].nunique()) if not prepared.empty else 0.0
+    avg_ticket = (
+        total_revenue / float(prepared["order_id"].nunique()) if not prepared.empty else 0.0
+    )
 
     insights: list[dict[str, str | float]] = [
         {

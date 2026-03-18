@@ -48,6 +48,14 @@ def test_discount_rating_and_revenue_are_normalized() -> None:
     assert cleaned.loc[0, "total_revenue"] == 0
 
 
+def test_clean_sales_data_deduplicates_business_key() -> None:
+    frame = pd.concat([_base_df(), _base_df()], ignore_index=True)
+
+    cleaned = clean_sales_data(frame)
+
+    assert len(cleaned) == 1
+
+
 def test_pandera_schema_validation_rejects_invalid_quantity() -> None:
     invalid_df = _base_df()
     invalid_df.loc[0, "quantity_sold"] = 0

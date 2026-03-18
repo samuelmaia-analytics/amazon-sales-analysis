@@ -47,6 +47,26 @@ def test_collect_product_metrics_has_core_fields() -> None:
     assert "headline_insights" in metrics
 
 
+def test_collect_product_metrics_regression_values() -> None:
+    raw_df = _base_df()
+    clean_df = _base_df()
+    featured_df = build_features(clean_df)
+
+    metrics = collect_product_metrics(
+        raw_df,
+        clean_df,
+        featured_df,
+        contract_version="1.0.0",
+        pipeline_version="0.2.0",
+    )
+
+    assert metrics["total_revenue"] == 220.0
+    assert metrics["gross_revenue"] == 250.0
+    assert metrics["discount_leakage"] == 30.0
+    assert metrics["north_star_nrr"] == 0.88
+    assert metrics["avg_ticket"] == 110.0
+
+
 def test_save_product_metrics_writes_json(tmp_path) -> None:
     output_path = tmp_path / "metrics.json"
     saved_path = save_product_metrics(

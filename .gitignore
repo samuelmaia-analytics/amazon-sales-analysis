@@ -1,13 +1,15 @@
-﻿# Python artifacts
+# Python artifacts
 __pycache__/
 *.py[cod]
 *$py.class
 .pytest_cache/
+.coverage
 
 # Virtual environments
 .venv/
 venv/
 env/
+.env
 
 # IDE
 .idea/

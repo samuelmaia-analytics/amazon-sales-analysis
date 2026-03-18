@@ -3,6 +3,8 @@ import json
 import logging
 import sys
 import types
+from pathlib import Path
+from typing import Any, cast
 
 import pandas as pd
 import pytest
@@ -10,8 +12,10 @@ import pytest
 from amazon_sales_analysis.cli import alerts as alerts_cli
 from amazon_sales_analysis.cli import pipeline as pipeline_cli
 from amazon_sales_analysis.cli import scenario as scenario_cli
+from amazon_sales_analysis.config import Settings
 from amazon_sales_analysis.data_ingestion import download_amazon_sales_dataset
 from amazon_sales_analysis.logging_config import configure_logging
+from amazon_sales_analysis.pipelines.runtime import PipelineRunContext
 
 
 def test_download_dataset_copies_files_from_kagglehub(tmp_path, monkeypatch) -> None:
@@ -22,9 +26,31 @@ def test_download_dataset_copies_files_from_kagglehub(tmp_path, monkeypatch) -> 
 
     fake_module = types.SimpleNamespace(dataset_download=lambda _: str(source_dir))
     monkeypatch.setitem(sys.modules, "kagglehub", fake_module)
-    monkeypatch.setattr("amazon_sales_analysis.data_ingestion.RAW_DATA_DIR", tmp_path / "raw")
+    settings = Settings(
+        environment="test",
+        project_root=tmp_path,
+        data_dir=tmp_path / "data",
+        raw_data_dir=tmp_path / "raw",
+        bronze_data_dir=tmp_path / "bronze",
+        silver_data_dir=tmp_path / "silver",
+        gold_data_dir=tmp_path / "gold",
+        warehouse_dir=tmp_path / "warehouse",
+        warehouse_db_path=tmp_path / "warehouse" / "amazon_sales.duckdb",
+        processed_data_dir=tmp_path / "processed",
+        external_data_dir=tmp_path / "external",
+        reports_dir=tmp_path / "reports",
+        figures_dir=tmp_path / "reports" / "figures",
+        tables_dir=tmp_path / "reports" / "tables",
+        metrics_dir=tmp_path / "reports" / "metrics",
+        contracts_dir=tmp_path / "contracts",
+        pipeline_runs_dir=tmp_path / "reports" / "runs",
+        kaggle_dataset="demo/dataset",
+        log_level="INFO",
+        enable_dataset_download=True,
+        max_data_staleness_days=45,
+    )
 
-    target_dir = download_amazon_sales_dataset()
+    target_dir = download_amazon_sales_dataset(settings=settings)
 
     copied_file = target_dir / "amazon_sales_dataset.csv"
     assert copied_file.exists()
@@ -48,26 +74,61 @@ def test_download_dataset_uses_existing_local_copy_when_kagglehub_is_missing(
         return real_import(name, *args, **kwargs)
 
     monkeypatch.delitem(sys.modules, "kagglehub", raising=False)
-    monkeypatch.setattr("amazon_sales_analysis.data_ingestion.RAW_DATA_DIR", raw_dir)
     monkeypatch.setattr(builtins, "__import__", fake_import)
+    settings = Settings(
+        environment="test",
+        project_root=tmp_path,
+        data_dir=tmp_path / "data",
+        raw_data_dir=raw_dir,
+        bronze_data_dir=tmp_path / "bronze",
+        silver_data_dir=tmp_path / "silver",
+        gold_data_dir=tmp_path / "gold",
+        warehouse_dir=tmp_path / "warehouse",
+        warehouse_db_path=tmp_path / "warehouse" / "amazon_sales.duckdb",
+        processed_data_dir=tmp_path / "processed",
+        external_data_dir=tmp_path / "external",
+        reports_dir=tmp_path / "reports",
+        figures_dir=tmp_path / "reports" / "figures",
+        tables_dir=tmp_path / "reports" / "tables",
+        metrics_dir=tmp_path / "reports" / "metrics",
+        contracts_dir=tmp_path / "contracts",
+        pipeline_runs_dir=tmp_path / "reports" / "runs",
+        kaggle_dataset="demo/dataset",
+        log_level="INFO",
+        enable_dataset_download=True,
+        max_data_staleness_days=45,
+    )
 
-    target = download_amazon_sales_dataset()
+    target = download_amazon_sales_dataset(settings=settings)
 
     assert target == target_dir
 
 
 def test_configure_logging_delegates_to_basic_config(monkeypatch) -> None:
-    captured: dict[str, object] = {}
+    monkeypatch.setattr(
+        "amazon_sales_analysis.logging_config.get_settings",
+        lambda: types.SimpleNamespace(environment="test", log_level="INFO"),
+    )
+    root_logger = logging.getLogger()
+    original_handlers = list(root_logger.handlers)
 
-    def fake_basic_config(**kwargs) -> None:
-        captured.update(kwargs)
+    configure_logging(logging.DEBUG, run_id="run-123")
 
-    monkeypatch.setattr(logging, "basicConfig", fake_basic_config)
+    assert root_logger.level == logging.DEBUG
+    assert root_logger.handlers
+    record = logging.LogRecord("test", logging.INFO, __file__, 1, "message", (), None)
+    for handler in root_logger.handlers:
+        for log_filter in handler.filters:
+            if callable(log_filter):
+                log_filter(record)
+            else:
+                log_filter.filter(record)
+    enriched_record = cast(Any, record)
+    assert enriched_record.environment == "test"
+    assert enriched_record.run_id == "run-123"
 
-    configure_logging(logging.DEBUG)
-
-    assert captured["level"] == logging.DEBUG
-    assert "%(levelname)s" in str(captured["format"])
+    root_logger.handlers.clear()
+    root_logger.handlers.extend(original_handlers)
 
 
 def test_scenario_cli_helpers_parse_and_merge_category_rates() -> None:
@@ -160,7 +221,9 @@ def test_alerts_cli_run_generates_csv_and_summary(tmp_path, monkeypatch) -> None
         return exported_csv
 
     monkeypatch.setattr(alerts_cli, "detect_discount_spikes", lambda *args, **kwargs: alerts)
-    monkeypatch.setattr(alerts_cli, "export_discount_spike_alerts", fake_export_discount_spike_alerts)
+    monkeypatch.setattr(
+        alerts_cli, "export_discount_spike_alerts", fake_export_discount_spike_alerts
+    )
 
     alerts_cli.run(
         input_path=input_path,
@@ -193,21 +256,60 @@ def test_pipeline_cli_main_orchestrates_pipeline_outputs(tmp_path, monkeypatch) 
     processed_path = tmp_path / "processed" / "amazon_sales_clean.csv"
     alerts_path = tmp_path / "tables" / "discount_spike_alerts.csv"
     tables_dir = tmp_path / "tables"
+    settings = types.SimpleNamespace(
+        environment="test",
+        raw_data_dir=tmp_path / "raw",
+        bronze_data_dir=tmp_path / "bronze",
+        silver_data_dir=tmp_path / "silver",
+        gold_data_dir=tmp_path / "gold",
+        warehouse_dir=tmp_path / "warehouse",
+        warehouse_db_path=tmp_path / "warehouse" / "amazon_sales.duckdb",
+        processed_data_dir=tmp_path / "processed",
+        external_data_dir=tmp_path / "external",
+        figures_dir=tmp_path / "figures",
+        tables_dir=tables_dir,
+        metrics_dir=tmp_path / "metrics",
+        contracts_dir=tmp_path / "contracts",
+        pipeline_runs_dir=tmp_path / "runs",
+        max_data_staleness_days=45,
+    )
     logged_messages: list[str] = []
 
     class FakeLogger:
         def info(self, message: str, *args) -> None:
             logged_messages.append(message % args if args else message)
 
-    monkeypatch.setattr(pipeline_cli, "configure_logging", lambda: None)
+        def exception(self, message: str, *args) -> None:
+            logged_messages.append(message % args if args else message)
+
+    monkeypatch.setattr(pipeline_cli, "get_settings", lambda: settings)
+    monkeypatch.setattr(
+        pipeline_cli,
+        "PipelineRunContext",
+        types.SimpleNamespace(
+            create=lambda _settings: PipelineRunContext(
+                run_id="run-123",
+                environment="test",
+                started_at_utc="2026-03-18T00:00:00+00:00",
+                artifact_dir=tmp_path / "runs" / "run-123",
+                manifest_path=tmp_path / "runs" / "run-123" / "execution_manifest.json",
+            )
+        ),
+    )
+    monkeypatch.setattr(pipeline_cli, "configure_logging", lambda **kwargs: None)
+    monkeypatch.setattr(pipeline_cli, "ensure_directories", lambda _settings: None)
     monkeypatch.setattr(
         pipeline_cli, "logging", types.SimpleNamespace(getLogger=lambda name=None: FakeLogger())
     )
-    monkeypatch.setattr(pipeline_cli, "download_amazon_sales_dataset", lambda: tmp_path / "raw")
+    monkeypatch.setattr(
+        pipeline_cli, "download_amazon_sales_dataset", lambda settings: tmp_path / "raw"
+    )
     monkeypatch.setattr(pipeline_cli, "load_raw_sales_data", lambda: raw_df)
     monkeypatch.setattr(pipeline_cli, "enforce_raw_contract", lambda frame: None)
     monkeypatch.setattr(pipeline_cli, "validate_raw_sales_data", lambda frame: frame)
-    monkeypatch.setattr(pipeline_cli, "export_contract_snapshot", lambda contract_version: contract_path)
+    monkeypatch.setattr(
+        pipeline_cli, "export_contract_snapshot", lambda contract_version: contract_path
+    )
     monkeypatch.setattr(pipeline_cli, "clean_sales_data", lambda frame: clean_df)
     monkeypatch.setattr(pipeline_cli, "enforce_clean_quality_gates", lambda frame: None)
     monkeypatch.setattr(pipeline_cli, "save_processed_data", lambda frame: processed_path)
@@ -219,8 +321,18 @@ def test_pipeline_cli_main_orchestrates_pipeline_outputs(tmp_path, monkeypatch) 
         lambda frame, report_insights: types.SimpleNamespace(insights=report_insights),
     )
     monkeypatch.setattr(pipeline_cli, "build_storytelling_visuals", lambda frame: None)
-    monkeypatch.setattr(pipeline_cli, "build_actionable_recommendations", lambda frame: recommendations)
+    monkeypatch.setattr(
+        pipeline_cli, "build_actionable_recommendations", lambda frame: recommendations
+    )
     monkeypatch.setattr(pipeline_cli, "build_executive_tables", lambda frame: organized_tables)
+    monkeypatch.setattr(
+        pipeline_cli,
+        "materialize_gold_mart",
+        lambda frame, settings: types.SimpleNamespace(
+            status="materialized",
+            validation_output_path=settings.warehouse_dir / "warehouse_validation.json",
+        ),
+    )
     monkeypatch.setattr(
         pipeline_cli,
         "collect_product_metrics",
@@ -232,7 +344,13 @@ def test_pipeline_cli_main_orchestrates_pipeline_outputs(tmp_path, monkeypatch) 
     monkeypatch.setattr(pipeline_cli, "save_product_metrics", lambda payload: metrics_path)
     monkeypatch.setattr(pipeline_cli, "detect_discount_spikes", lambda frame: alerts_df)
     monkeypatch.setattr(pipeline_cli, "export_discount_spike_alerts", lambda frame: alerts_path)
-    monkeypatch.setattr(pipeline_cli, "TABLES_DIR", tables_dir)
+
+    def fake_write_json_artifact(payload: dict[str, object], target: Path) -> Path:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(json.dumps(payload), encoding="utf-8")
+        return target
+
+    monkeypatch.setattr(pipeline_cli, "write_json_artifact", fake_write_json_artifact)
 
     pipeline_cli.main()
 
@@ -240,4 +358,14 @@ def test_pipeline_cli_main_orchestrates_pipeline_outputs(tmp_path, monkeypatch) 
     assert (tables_dir / "executive_insights.csv").exists()
     assert (tables_dir / "category_performance.csv").exists()
     assert (tables_dir / "product_contribution.csv").exists()
+    assert any(
+        path.name.endswith("_amazon_sales_raw.csv") for path in settings.bronze_data_dir.iterdir()
+    )
+    assert any(
+        path.name.endswith("_amazon_sales_clean.csv") for path in settings.silver_data_dir.iterdir()
+    )
+    assert any(
+        path.name.endswith("_commercial_mart.csv") for path in settings.gold_data_dir.iterdir()
+    )
+    assert (tmp_path / "runs" / "run-123" / "execution_manifest.json").exists()
     assert any("Pipeline completed successfully" in message for message in logged_messages)

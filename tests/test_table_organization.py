@@ -37,6 +37,7 @@ def test_build_executive_tables_returns_expected_tables() -> None:
         "insights_summary",
         "kpi_catalog",
         "data_quality_audit",
+        "quality_gate_summary",
     }
 
     assert set(tables.keys()) == expected_keys
