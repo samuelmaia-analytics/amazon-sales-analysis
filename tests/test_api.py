@@ -173,6 +173,20 @@ def test_pipeline_compare_latest_returns_404_without_enough_runs(monkeypatch) ->
     assert response.status_code == 404
 
 
+def test_operations_latest_returns_summary(monkeypatch) -> None:
+    monkeypatch.setattr(
+        api,
+        "latest_operational_summary",
+        lambda: {"run_id": "run-1", "overall_status": "healthy"},
+    )
+    client = TestClient(api.app)
+
+    response = client.get("/operations/latest")
+
+    assert response.status_code == 200
+    assert response.json()["run_id"] == "run-1"
+
+
 def test_health_endpoint_reports_operational_flags(tmp_path, monkeypatch) -> None:
     dataset_path = tmp_path / "amazon_sales_clean.csv"
     alerts_path = tmp_path / "discount_spike_alerts.csv"

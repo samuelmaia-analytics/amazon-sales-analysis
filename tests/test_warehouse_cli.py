@@ -29,6 +29,7 @@ def test_warehouse_cli_exports_category_revenue(monkeypatch, capsys, tmp_path) -
                         "export_category_revenue": True,
                         "show_run_history": False,
                         "compare_latest_runs": False,
+                        "show_operational_summary": False,
                     },
                 )()
             },
@@ -62,6 +63,7 @@ def test_warehouse_cli_prints_metadata(monkeypatch, capsys) -> None:
                         "export_category_revenue": False,
                         "show_run_history": False,
                         "compare_latest_runs": False,
+                        "show_operational_summary": False,
                     },
                 )()
             },
@@ -71,3 +73,49 @@ def test_warehouse_cli_prints_metadata(monkeypatch, capsys) -> None:
     warehouse_cli.main()
 
     assert "warehouse_table" in capsys.readouterr().out
+
+
+def test_warehouse_cli_prints_operational_summary(monkeypatch, capsys) -> None:
+    monkeypatch.setattr(warehouse_cli, "configure_logging", lambda: None)
+    monkeypatch.setattr(warehouse_cli, "get_settings", lambda: object())
+    monkeypatch.setattr(
+        warehouse_cli,
+        "warehouse_query_metadata",
+        lambda settings: {"warehouse_table": "gold_commercial_performance"},
+    )
+    monkeypatch.setattr(
+        warehouse_cli,
+        "latest_operational_summary",
+        lambda settings: {
+            "run_id": "run-1",
+            "overall_status": "healthy",
+            "pipeline_version": "1.0.0",
+            "quality_gates": {"status": "pass"},
+            "metrics_regression": {"status": "pass"},
+            "warehouse_validation": {"status": "materialized"},
+        },
+    )
+    monkeypatch.setattr(
+        warehouse_cli,
+        "build_parser",
+        lambda: type(
+            "Parser",
+            (),
+            {
+                "parse_args": lambda self: type(
+                    "Args",
+                    (),
+                    {
+                        "export_category_revenue": False,
+                        "show_run_history": False,
+                        "compare_latest_runs": False,
+                        "show_operational_summary": True,
+                    },
+                )()
+            },
+        )(),
+    )
+
+    warehouse_cli.main()
+
+    assert "Latest run run-1" in capsys.readouterr().out

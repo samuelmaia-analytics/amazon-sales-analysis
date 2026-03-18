@@ -21,6 +21,8 @@ def test_build_settings_reads_environment_variables(monkeypatch, tmp_path) -> No
     assert settings.enable_dataset_download is False
     assert settings.log_level == "DEBUG"
     assert settings.bronze_data_dir == (tmp_path / "custom-data" / "bronze").resolve()
+    assert settings.kpi_regression_tolerance_pct == 0.15
+    assert settings.warehouse_materialization_mode == "replace"
 
 
 def test_pipeline_run_context_writes_manifest(tmp_path) -> None:
@@ -46,6 +48,8 @@ def test_pipeline_run_context_writes_manifest(tmp_path) -> None:
         log_level="INFO",
         enable_dataset_download=True,
         max_data_staleness_days=45,
+        kpi_regression_tolerance_pct=0.15,
+        warehouse_materialization_mode="replace",
     )
     context = PipelineRunContext.create(settings)
     payload = context.manifest_payload(
@@ -66,4 +70,6 @@ def test_pipeline_run_context_writes_manifest(tmp_path) -> None:
     stored = json.loads(context.manifest_path.read_text(encoding="utf-8"))
     assert stored["run_id"] == context.run_id
     assert stored["row_counts"]["clean"] == 9
+    assert stored["status"] == "succeeded"
+    assert stored["duration_seconds"] >= 0
     assert "sha256" in stored["outputs"]["metrics"]

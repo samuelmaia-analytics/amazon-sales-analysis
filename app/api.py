@@ -10,13 +10,18 @@ from fastapi import FastAPI, HTTPException
 from amazon_sales_analysis import __version__
 from amazon_sales_analysis.analytics import add_derived_metrics, summarize_kpis
 from amazon_sales_analysis.anomaly_detection import detect_discount_spikes
-from amazon_sales_analysis.config import PROCESSED_DATA_DIR, TABLES_DIR, get_settings
+from amazon_sales_analysis.config import get_settings
 from amazon_sales_analysis.modeling import rank_discount_opportunities
-from amazon_sales_analysis.run_history import compare_latest_runs, summarize_run_history
-from amazon_sales_analysis.warehouse_service import query_category_revenue, warehouse_query_metadata
+from amazon_sales_analysis.operations import latest_operational_summary
+from amazon_sales_analysis.serving.run_history import compare_latest_runs, summarize_run_history
+from amazon_sales_analysis.serving.warehouse_service import (
+    query_category_revenue,
+    warehouse_query_metadata,
+)
+from amazon_sales_analysis.transformations.data_preprocessing import read_sales_dataset
 
-DATASET_PATH = PROCESSED_DATA_DIR / "amazon_sales_clean.csv"
-ALERTS_PATH = TABLES_DIR / "discount_spike_alerts.csv"
+DATASET_PATH: Path | None = None
+ALERTS_PATH: Path | None = None
 
 app = FastAPI(
     title="Amazon Sales Analytics API",
@@ -34,15 +39,30 @@ def _existing_path(path: Path) -> Path:
     return path
 
 
+def _processed_dataset_path() -> Path:
+    if DATASET_PATH is not None:
+        return DATASET_PATH
+    settings = get_settings()
+    return settings.processed_data_dir / "amazon_sales_clean.csv"
+
+
+def _alerts_snapshot_path() -> Path:
+    if ALERTS_PATH is not None:
+        return ALERTS_PATH
+    settings = get_settings()
+    return settings.tables_dir / "discount_spike_alerts.csv"
+
+
 @lru_cache(maxsize=4)
 def _read_processed_data(dataset_path: str, modified_at_ns: int) -> pd.DataFrame:
     del modified_at_ns
-    frame = pd.read_csv(dataset_path, parse_dates=["order_date"])
+    frame = read_sales_dataset(Path(dataset_path))
+    frame["order_date"] = pd.to_datetime(frame["order_date"], errors="coerce")
     return add_derived_metrics(frame)
 
 
 def _load_processed_data() -> pd.DataFrame:
-    dataset_path = _existing_path(DATASET_PATH)
+    dataset_path = _existing_path(_processed_dataset_path())
     stat = dataset_path.stat()
     return _read_processed_data(str(dataset_path), stat.st_mtime_ns).copy()
 
@@ -53,8 +73,8 @@ def health() -> dict[str, Any]:
     return {
         "status": "ok",
         "version": __version__,
-        "processed_dataset_available": DATASET_PATH.exists(),
-        "alerts_snapshot_available": ALERTS_PATH.exists(),
+        "processed_dataset_available": _processed_dataset_path().exists(),
+        "alerts_snapshot_available": _alerts_snapshot_path().exists(),
         "warehouse_db_available": settings.warehouse_db_path.exists(),
     }
 
@@ -63,7 +83,7 @@ def health() -> dict[str, Any]:
 def readiness() -> dict[str, Any]:
     settings = get_settings()
     checks = {
-        "processed_dataset_available": DATASET_PATH.exists(),
+        "processed_dataset_available": _processed_dataset_path().exists(),
         "warehouse_query_layer_available": (
             settings.warehouse_db_path.exists() or any(settings.gold_data_dir.glob("*_commercial_mart.csv"))
         ),
@@ -106,8 +126,9 @@ def category_opportunities() -> list[dict[str, Any]]:
 
 @app.get("/alerts/discount-spikes")
 def discount_spikes() -> list[dict[str, Any]]:
-    if ALERTS_PATH.exists():
-        alerts = pd.read_csv(ALERTS_PATH, parse_dates=["order_date"])
+    alerts_snapshot_path = _alerts_snapshot_path()
+    if alerts_snapshot_path.exists():
+        alerts = pd.read_csv(alerts_snapshot_path, parse_dates=["order_date"])
     else:
         frame = _load_processed_data()
         alerts = detect_discount_spikes(frame)
@@ -141,4 +162,12 @@ def pipeline_compare_latest() -> dict[str, Any]:
     try:
         return compare_latest_runs()
     except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@app.get("/operations/latest")
+def operations_latest() -> dict[str, Any]:
+    try:
+        return latest_operational_summary()
+    except FileNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc

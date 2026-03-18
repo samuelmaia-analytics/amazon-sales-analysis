@@ -32,6 +32,8 @@ def _settings(tmp_path) -> Settings:
         log_level="INFO",
         enable_dataset_download=True,
         max_data_staleness_days=45,
+        kpi_regression_tolerance_pct=0.15,
+        warehouse_materialization_mode="replace",
     )
 
 

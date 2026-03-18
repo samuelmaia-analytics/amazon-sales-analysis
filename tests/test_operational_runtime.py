@@ -48,6 +48,8 @@ def test_download_dataset_copies_files_from_kagglehub(tmp_path, monkeypatch) -> 
         log_level="INFO",
         enable_dataset_download=True,
         max_data_staleness_days=45,
+        kpi_regression_tolerance_pct=0.15,
+        warehouse_materialization_mode="replace",
     )
 
     target_dir = download_amazon_sales_dataset(settings=settings)
@@ -97,6 +99,8 @@ def test_download_dataset_uses_existing_local_copy_when_kagglehub_is_missing(
         log_level="INFO",
         enable_dataset_download=True,
         max_data_staleness_days=45,
+        kpi_regression_tolerance_pct=0.15,
+        warehouse_materialization_mode="replace",
     )
 
     target = download_amazon_sales_dataset(settings=settings)
@@ -279,6 +283,9 @@ def test_pipeline_cli_main_orchestrates_pipeline_outputs(tmp_path, monkeypatch) 
         def info(self, message: str, *args) -> None:
             logged_messages.append(message % args if args else message)
 
+        def warning(self, message: str, *args) -> None:
+            logged_messages.append(message % args if args else message)
+
         def exception(self, message: str, *args) -> None:
             logged_messages.append(message % args if args else message)
 
@@ -302,7 +309,9 @@ def test_pipeline_cli_main_orchestrates_pipeline_outputs(tmp_path, monkeypatch) 
         pipeline_cli, "logging", types.SimpleNamespace(getLogger=lambda name=None: FakeLogger())
     )
     monkeypatch.setattr(
-        pipeline_cli, "download_amazon_sales_dataset", lambda settings: tmp_path / "raw"
+        pipeline_cli,
+        "download_amazon_sales_dataset",
+        lambda settings, force_download=False: tmp_path / "raw",
     )
     monkeypatch.setattr(pipeline_cli, "load_raw_sales_data", lambda: raw_df)
     monkeypatch.setattr(pipeline_cli, "enforce_raw_contract", lambda frame: None)
@@ -313,6 +322,9 @@ def test_pipeline_cli_main_orchestrates_pipeline_outputs(tmp_path, monkeypatch) 
     monkeypatch.setattr(pipeline_cli, "clean_sales_data", lambda frame: clean_df)
     monkeypatch.setattr(pipeline_cli, "enforce_clean_quality_gates", lambda frame: None)
     monkeypatch.setattr(pipeline_cli, "save_processed_data", lambda frame: processed_path)
+    monkeypatch.setattr(
+        pipeline_cli, "export_quality_gate_report", lambda frame, settings: metrics_path.parent / "quality_gates.json"
+    )
     monkeypatch.setattr(pipeline_cli, "prepare_sales_frame", lambda frame: featured_df)
     monkeypatch.setattr(pipeline_cli, "generate_executive_insights", lambda frame: insights)
     monkeypatch.setattr(
@@ -328,7 +340,7 @@ def test_pipeline_cli_main_orchestrates_pipeline_outputs(tmp_path, monkeypatch) 
     monkeypatch.setattr(
         pipeline_cli,
         "materialize_gold_mart",
-        lambda frame, settings: types.SimpleNamespace(
+        lambda frame, settings, run_id=None: types.SimpleNamespace(
             status="materialized",
             validation_output_path=settings.warehouse_dir / "warehouse_validation.json",
         ),
@@ -342,6 +354,25 @@ def test_pipeline_cli_main_orchestrates_pipeline_outputs(tmp_path, monkeypatch) 
         },
     )
     monkeypatch.setattr(pipeline_cli, "save_product_metrics", lambda payload: metrics_path)
+    monkeypatch.setattr(pipeline_cli, "load_metrics_baseline", lambda settings: None)
+    monkeypatch.setattr(
+        pipeline_cli,
+        "build_metrics_regression_report",
+        lambda payload, settings, baseline_metrics: {"status": "baseline_initialized", "failed_metrics": []},
+    )
+    monkeypatch.setattr(
+        pipeline_cli,
+        "save_metrics_regression_report",
+        lambda report, settings: metrics_path.parent / "product_metrics_regression.json",
+    )
+    monkeypatch.setattr(
+        pipeline_cli, "save_metrics_baseline", lambda payload, settings: metrics_path.parent / "product_metrics_baseline.json"
+    )
+    monkeypatch.setattr(
+        pipeline_cli,
+        "write_operational_summary",
+        lambda payload, output_path, settings: output_path,
+    )
     monkeypatch.setattr(pipeline_cli, "detect_discount_spikes", lambda frame: alerts_df)
     monkeypatch.setattr(pipeline_cli, "export_discount_spike_alerts", lambda frame: alerts_path)
 
@@ -352,7 +383,7 @@ def test_pipeline_cli_main_orchestrates_pipeline_outputs(tmp_path, monkeypatch) 
 
     monkeypatch.setattr(pipeline_cli, "write_json_artifact", fake_write_json_artifact)
 
-    pipeline_cli.main()
+    pipeline_cli.run()
 
     assert (tables_dir / "actionable_recommendations.csv").exists()
     assert (tables_dir / "executive_insights.csv").exists()
@@ -368,4 +399,155 @@ def test_pipeline_cli_main_orchestrates_pipeline_outputs(tmp_path, monkeypatch) 
         path.name.endswith("_commercial_mart.csv") for path in settings.gold_data_dir.iterdir()
     )
     assert (tmp_path / "runs" / "run-123" / "execution_manifest.json").exists()
+    assert (tmp_path / "runs" / "run-123" / "run_status.json").exists()
     assert any("Pipeline completed successfully" in message for message in logged_messages)
+
+
+def test_pipeline_cli_can_fail_on_kpi_regression(tmp_path, monkeypatch) -> None:
+    settings = types.SimpleNamespace(
+        environment="test",
+        raw_data_dir=tmp_path / "raw",
+        bronze_data_dir=tmp_path / "bronze",
+        silver_data_dir=tmp_path / "silver",
+        gold_data_dir=tmp_path / "gold",
+        warehouse_dir=tmp_path / "warehouse",
+        warehouse_db_path=tmp_path / "warehouse" / "amazon_sales.duckdb",
+        processed_data_dir=tmp_path / "processed",
+        external_data_dir=tmp_path / "external",
+        figures_dir=tmp_path / "figures",
+        tables_dir=tmp_path / "tables",
+        metrics_dir=tmp_path / "metrics",
+        contracts_dir=tmp_path / "contracts",
+        pipeline_runs_dir=tmp_path / "runs",
+        max_data_staleness_days=45,
+    )
+
+    class FakeLogger:
+        def __init__(self) -> None:
+            self.exception_messages: list[str] = []
+            self.error_messages: list[str] = []
+
+        def info(self, message: str, *args) -> None:
+            return None
+
+        def warning(self, message: str, *args) -> None:
+            return None
+
+        def error(self, message: str, *args) -> None:
+            self.error_messages.append(message % args if args else message)
+
+        def exception(self, message: str, *args) -> None:
+            self.exception_messages.append(message % args if args else message)
+
+    fake_logger = FakeLogger()
+
+    monkeypatch.setattr(pipeline_cli, "get_settings", lambda: settings)
+    monkeypatch.setattr(
+        pipeline_cli,
+        "PipelineRunContext",
+        types.SimpleNamespace(
+            create=lambda _settings: PipelineRunContext(
+                run_id="run-123",
+                environment="test",
+                started_at_utc="2026-03-18T00:00:00+00:00",
+                artifact_dir=tmp_path / "runs" / "run-123",
+                manifest_path=tmp_path / "runs" / "run-123" / "execution_manifest.json",
+            )
+        ),
+    )
+    monkeypatch.setattr(pipeline_cli, "configure_logging", lambda **kwargs: None)
+    monkeypatch.setattr(pipeline_cli, "ensure_directories", lambda _settings: None)
+    monkeypatch.setattr(
+        pipeline_cli, "logging", types.SimpleNamespace(getLogger=lambda name=None: fake_logger)
+    )
+    monkeypatch.setattr(
+        pipeline_cli,
+        "download_amazon_sales_dataset",
+        lambda settings, force_download=False: tmp_path / "raw",
+    )
+    monkeypatch.setattr(pipeline_cli, "load_raw_sales_data", lambda: pd.DataFrame({"order_id": [1]}))
+    monkeypatch.setattr(pipeline_cli, "enforce_raw_contract", lambda frame: None)
+    monkeypatch.setattr(pipeline_cli, "validate_raw_sales_data", lambda frame: frame)
+    monkeypatch.setattr(
+        pipeline_cli, "export_contract_snapshot", lambda contract_version: tmp_path / "contracts" / "snapshot.json"
+    )
+    monkeypatch.setattr(pipeline_cli, "clean_sales_data", lambda frame: pd.DataFrame({"order_id": [1]}))
+    monkeypatch.setattr(pipeline_cli, "enforce_clean_quality_gates", lambda frame: None)
+    monkeypatch.setattr(
+        pipeline_cli, "save_processed_data", lambda frame: tmp_path / "processed" / "amazon_sales_clean.csv"
+    )
+    monkeypatch.setattr(
+        pipeline_cli,
+        "export_quality_gate_report",
+        lambda frame, settings: tmp_path / "metrics" / "quality_gates.json",
+    )
+    monkeypatch.setattr(pipeline_cli, "prepare_sales_frame", lambda frame: pd.DataFrame({"order_id": [1]}))
+    monkeypatch.setattr(
+        pipeline_cli, "generate_executive_insights", lambda frame: pd.DataFrame({"headline": ["x"], "insight": ["y"]})
+    )
+    monkeypatch.setattr(
+        pipeline_cli,
+        "build_executive_report",
+        lambda frame, report_insights: types.SimpleNamespace(insights=report_insights),
+    )
+    monkeypatch.setattr(pipeline_cli, "build_storytelling_visuals", lambda frame: None)
+    monkeypatch.setattr(
+        pipeline_cli, "build_actionable_recommendations", lambda frame: pd.DataFrame({"owner": ["x"]})
+    )
+    monkeypatch.setattr(
+        pipeline_cli, "build_executive_tables", lambda frame: {"category_performance": pd.DataFrame({"x": [1]})}
+    )
+    monkeypatch.setattr(
+        pipeline_cli,
+        "materialize_gold_mart",
+        lambda frame, settings, run_id=None: types.SimpleNamespace(
+            status="materialized",
+            validation_output_path=settings.warehouse_dir / "warehouse_validation.json",
+        ),
+    )
+    monkeypatch.setattr(
+        pipeline_cli,
+        "collect_product_metrics",
+        lambda raw_df, clean_df, featured_df, contract_version, pipeline_version: {
+            "contract_version": contract_version,
+            "pipeline_version": pipeline_version,
+        },
+    )
+    monkeypatch.setattr(
+        pipeline_cli,
+        "save_product_metrics",
+        lambda payload: tmp_path / "metrics" / "product_metrics.json",
+    )
+    monkeypatch.setattr(pipeline_cli, "load_metrics_baseline", lambda settings: {"total_revenue": 100.0})
+    monkeypatch.setattr(
+        pipeline_cli,
+        "build_metrics_regression_report",
+        lambda payload, settings, baseline_metrics: {
+            "status": "fail",
+            "failed_metrics": ["total_revenue"],
+        },
+    )
+    monkeypatch.setattr(
+        pipeline_cli,
+        "save_metrics_regression_report",
+        lambda report, settings: tmp_path / "metrics" / "product_metrics_regression.json",
+    )
+    monkeypatch.setattr(
+        pipeline_cli, "save_metrics_baseline", lambda payload, settings: tmp_path / "metrics" / "product_metrics_baseline.json"
+    )
+    monkeypatch.setattr(pipeline_cli, "detect_discount_spikes", lambda frame: pd.DataFrame({"severity": []}))
+    monkeypatch.setattr(
+        pipeline_cli,
+        "export_discount_spike_alerts",
+        lambda frame: tmp_path / "tables" / "discount_spike_alerts.csv",
+    )
+
+    with pytest.raises(SystemExit, match="total_revenue"):
+        pipeline_cli.run(fail_on_kpi_regression=True)
+
+    assert fake_logger.exception_messages == []
+    assert any("Pipeline terminated:" in message for message in fake_logger.error_messages)
+    status_payload = json.loads(
+        (tmp_path / "runs" / "run-123" / "run_status.json").read_text(encoding="utf-8")
+    )
+    assert status_payload["status"] == "terminated"

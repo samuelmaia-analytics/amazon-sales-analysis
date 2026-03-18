@@ -61,6 +61,8 @@ class Settings:
     log_level: str
     enable_dataset_download: bool
     max_data_staleness_days: int
+    kpi_regression_tolerance_pct: float
+    warehouse_materialization_mode: str
 
 
 def build_settings() -> Settings:
@@ -96,6 +98,12 @@ def build_settings() -> Settings:
         log_level=os.getenv("AMAZON_SALES_LOG_LEVEL", "INFO").upper(),
         enable_dataset_download=_get_bool_env("AMAZON_SALES_ENABLE_DOWNLOAD", True),
         max_data_staleness_days=int(os.getenv("AMAZON_SALES_MAX_DATA_STALENESS_DAYS", "45")),
+        kpi_regression_tolerance_pct=float(
+            os.getenv("AMAZON_SALES_KPI_REGRESSION_TOLERANCE_PCT", "0.15")
+        ),
+        warehouse_materialization_mode=os.getenv(
+            "AMAZON_SALES_WAREHOUSE_MATERIALIZATION_MODE", "replace"
+        ).lower(),
     )
 
 

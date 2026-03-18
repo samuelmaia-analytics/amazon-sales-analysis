@@ -33,6 +33,8 @@ def _settings(tmp_path) -> Settings:
         log_level="INFO",
         enable_dataset_download=True,
         max_data_staleness_days=45,
+        kpi_regression_tolerance_pct=0.15,
+        warehouse_materialization_mode="replace",
     )
 
 
@@ -59,6 +61,7 @@ def test_materialize_gold_mart_gracefully_skips_without_duckdb(tmp_path, monkeyp
     payload = json.loads(result.validation_output_path.read_text(encoding="utf-8"))
     assert result.status == "skipped"
     assert payload["reason"] == "duckdb_not_installed"
+    assert result.materialization_mode == "replace"
 
 
 def test_materialize_gold_mart_uses_duckdb_when_available(tmp_path, monkeypatch) -> None:
@@ -91,3 +94,33 @@ def test_materialize_gold_mart_uses_duckdb_when_available(tmp_path, monkeypatch)
         "CREATE OR REPLACE TABLE gold_commercial_performance" in query for query in executed_queries
     )
     assert payload["status"] == "materialized"
+
+
+def test_materialize_gold_mart_appends_history_when_configured(tmp_path, monkeypatch) -> None:
+    executed_queries: list[str] = []
+
+    class FakeConnection:
+        def register(self, name: str, df: pd.DataFrame) -> None:
+            assert name in {"featured_df", "history_df"}
+            assert not df.empty
+
+        def execute(self, query: str) -> FakeConnection:
+            executed_queries.append(query)
+            return self
+
+        def fetchdf(self) -> pd.DataFrame:
+            return pd.DataFrame({"product_category": ["Beauty"], "revenue": [90.0]})
+
+        def close(self) -> None:
+            return None
+
+    fake_duckdb = SimpleNamespace(connect=lambda _: FakeConnection())
+    monkeypatch.setattr("amazon_sales_analysis.warehouse.duckdb_available", lambda: True)
+    monkeypatch.setitem(sys.modules, "duckdb", fake_duckdb)
+    settings = _settings(tmp_path)
+    settings = Settings(**{**settings.__dict__, "warehouse_materialization_mode": "append_history"})
+
+    result = materialize_gold_mart(_frame(), settings=settings, run_id="run-123")
+
+    assert result.materialization_mode == "append_history"
+    assert any("gold_commercial_performance_history" in query for query in executed_queries)

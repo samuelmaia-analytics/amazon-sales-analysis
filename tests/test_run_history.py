@@ -29,6 +29,8 @@ def _settings(tmp_path) -> Settings:
         log_level="INFO",
         enable_dataset_download=True,
         max_data_staleness_days=45,
+        kpi_regression_tolerance_pct=0.15,
+        warehouse_materialization_mode="replace",
     )
 
 
@@ -55,6 +57,9 @@ def _write_run(settings: Settings, run_id: str, revenue: float, avg_ticket: floa
     manifest = {
         "run_id": run_id,
         "started_at_utc": run_id,
+        "completed_at_utc": run_id,
+        "duration_seconds": 1.5,
+        "status": "succeeded",
         "pipeline_version": "1.0.0",
         "row_counts": {"raw": 2, "clean": 2, "alerts": 0},
         "outputs": {"metrics": {"path": str(metrics_path)}},
@@ -70,6 +75,8 @@ def test_summarize_run_history_returns_latest_runs(tmp_path) -> None:
     runs = summarize_run_history(settings=settings)
 
     assert runs[0]["run_id"] == "20260319T120000Z-b"
+    assert runs[0]["status"] == "succeeded"
+    assert runs[0]["duration_seconds"] == 1.5
     assert runs[1]["run_id"] == "20260318T120000Z-a"
 
 

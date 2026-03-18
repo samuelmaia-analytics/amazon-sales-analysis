@@ -5,10 +5,10 @@ import plotly.express as px
 import streamlit as st
 
 from amazon_sales_analysis.config import PROCESSED_DATA_DIR
-from amazon_sales_analysis.data_preprocessing import read_sales_dataset
 from amazon_sales_analysis.insights import generate_executive_insights
-from amazon_sales_analysis.quality import summarize_quality_gates
 from amazon_sales_analysis.sales_analysis import build_executive_report, prepare_sales_frame
+from amazon_sales_analysis.transformations.data_preprocessing import read_sales_dataset
+from amazon_sales_analysis.validation.quality import summarize_quality_gates
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 DATASET_PATH = PROCESSED_DATA_DIR / "amazon_sales_clean.csv"

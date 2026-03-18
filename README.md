@@ -1,186 +1,237 @@
-# Amazon Sales Analytics Pipeline
+# Amazon Sales Analytics Platform
 
-Pipeline analitico em Python para monitoramento de performance comercial de marketplace. O projeto foi estruturado como um sistema de dados pequeno, mas com preocupacoes reais de engenharia: camadas de ingestao e transformacao, quality gates, contratos de dados, artefatos versionados por execucao, testes e automacao de qualidade.
+Production-oriented analytics project for marketplace commercial performance. The repository combines batch processing, data quality controls, analytical marts, warehouse query serving, operational APIs, and execution history tracking in a single portfolio-ready codebase.
 
-## Business value
+## Languages
 
-O foco do repositório nao e apenas explorar um CSV. Ele responde perguntas operacionais que um time comercial ou de revenue operations realmente faria:
+- International: [README.md](README.md)
+- PT-BR: [docs/README.pt-BR.md](docs/README.pt-BR.md)
+- PT-PT: [docs/README.pt-PT.md](docs/README.pt-PT.md)
 
-- quanto revenue foi gerado e quanto foi perdido por desconto
-- quais categorias concentram receita e pressao promocional
-- se a tendencia mensal esta acelerando, estavel ou em queda
-- onde existem alertas de spike de desconto
-- quais recomendacoes acionaveis podem entrar no rito semanal
+## Dataset Source
 
-## Arquitetura
+Primary source:
+
+- Kaggle dataset: `aliiihussain/amazon-sales-dataset`
+- Retrieval mechanism: `kagglehub`
+- Raw landing path: `data/raw/amazon_sales/amazon_sales_dataset.csv`
+
+The pipeline reuses the local raw dataset when it already exists and only downloads again when needed or explicitly forced.
+
+## Why This Repository Exists
+
+This project is designed to look and behave like a small real data platform rather than a notebook collection. It focuses on questions a revenue operations or category management team would actually ask:
+
+- how much revenue was generated and how much was lost to discount leakage
+- which categories concentrate revenue and promotional pressure
+- whether the commercial trend is accelerating, stable, or declining
+- where discount spikes require operational action
+- how KPIs changed between the latest pipeline executions
+
+## Platform Architecture Blueprint
 
 ```text
-src/amazon_sales_analysis/
-|-- cli/                    # pontos de entrada de pipeline, alertas e simulacao
-|-- pipelines/runtime.py    # contexto de execucao e escrita atomica de artefatos
-|-- config.py               # configuracao por ambiente via variaveis e .env
-|-- data_ingestion.py       # obtencao/reuso da camada raw
-|-- data_preprocessing.py   # leitura, limpeza e persistencia da camada clean
-|-- contracts.py            # contrato do dataset bruto
-|-- quality.py              # quality gates da camada tratada
-|-- feature_engineering.py  # features derivadas
-|-- sales_analysis.py       # metricas e tabelas de negocio
-|-- anomaly_detection.py    # alertas operacionais
-|-- decision_engine.py      # recomendacoes acionaveis
-|-- metrics.py              # pacote consolidado de KPIs
-`-- visualization.py        # artefatos visuais
+.
+|-- .github/
+|   |-- ISSUE_TEMPLATE/
+|   |-- workflows/
+|   `-- PULL_REQUEST_TEMPLATE.md
+|-- alerts/
+|   `-- discount_spike_alert.py
+|-- app/
+|   |-- __init__.py
+|   |-- api.py
+|   `-- streamlit_app.py
+|-- assets/
+|-- contracts/
+|   |-- product_metrics.contract.json
+|   `-- sales_dataset.contract.json
+|-- data/
+|   |-- processed/
+|   `-- ... runtime layers created from config
+|-- docs/
+|   |-- README.en.md
+|   |-- README.pt-BR.md
+|   |-- README.pt-PT.md
+|   `-- REPOSITORY_STRUCTURE.md
+|-- notebooks/
+|-- reports/
+|-- scripts/
+|   |-- bump_version.py
+|   |-- run_alerts.py
+|   |-- run_pipeline.py
+|   `-- run_scenario_simulator.py
+|-- sql/
+|   |-- gold_commercial_mart.sql
+|   `-- warehouse_validation.sql
+|-- src/amazon_sales_analysis/
+|   |-- cli/
+|   |-- ingestion/
+|   |-- observability/
+|   |-- pipelines/
+|   |-- serving/
+|   |-- transformations/
+|   |-- validation/
+|   |-- config.py
+|   |-- operations.py
+|   |-- analytics.py
+|   |-- anomaly_detection.py
+|   |-- business_metrics.py
+|   |-- decision_engine.py
+|   |-- eda.py
+|   |-- evaluation.py
+|   |-- feature_engineering.py
+|   |-- insights.py
+|   |-- modeling.py
+|   |-- sales_analysis.py
+|   |-- scenario_simulator.py
+|   |-- table_organization.py
+|   |-- visualization.py
+|   |-- contracts.py              # compatibility shim
+|   |-- data_ingestion.py         # compatibility shim
+|   |-- data_preprocessing.py     # compatibility shim
+|   |-- logging_config.py         # compatibility shim
+|   |-- metrics.py                # compatibility shim
+|   |-- quality.py                # compatibility shim
+|   |-- run_history.py            # compatibility shim
+|   |-- warehouse.py              # compatibility shim
+|   `-- warehouse_service.py      # compatibility shim
+|-- tests/
+|-- CHANGELOG.md
+|-- CONTRIBUTING.md
+|-- Dockerfile
+|-- Makefile
+|-- main.py
+`-- pyproject.toml
 ```
 
-## Fluxo de dados
+Detailed structure and placement rules: [docs/REPOSITORY_STRUCTURE.md](/C:/Users/samue/PycharmProjects/amazon-sales-analysis/docs/REPOSITORY_STRUCTURE.md)
 
-1. `data/raw/amazon_sales/amazon_sales_dataset.csv`
-2. snapshot bronze por execucao em `data/bronze/`
-3. validacao de contrato e schema
-4. limpeza, deduplicacao, normalizacao e quality gates
-5. snapshot silver em `data/silver/`
-6. enriquecimento analitico e publicacao do mart gold em `data/gold/`
-7. materializacao opcional do mart consultavel em DuckDB em `data/warehouse/amazon_sales.duckdb`
-8. exportacao de tabelas, metricas, alertas e visuais
-9. geracao de `reports/runs/<run_id>/execution_manifest.json` com hashes, perfis e lineage do batch
+The package now follows a domain-oriented layout. New code should target the dedicated subpackages and use the top-level modules only when backward compatibility is required.
 
-## Confiabilidade implementada
+## Data Flow
 
-- Reprocessamento: o pipeline reusa o dataset bruto local quando ele ja existe.
-- Idempotencia de saida: os artefatos principais sao regravados de forma deterministica nos mesmos destinos.
-- Escrita mais segura: CSVs/JSONs criticos usam escrita atomica para reduzir risco de artefato parcial.
-- Observabilidade: logs incluem `environment` e `run_id`.
-- Rastreabilidade: cada execucao gera um manifest com entradas, saidas, hashes SHA-256 e perfis de dataset.
-- Governanca de qualidade: freshness, unicidade de chave de negocio e quality summary exportado.
-- Camadas de dados: bronze, silver e gold ficam explicitas para facilitar reprocessamento e storytelling tecnico.
-- Warehouse local: quando `duckdb` esta disponivel, o gold tambem vira uma tabela consultavel com SQL versionado.
-- Serving analitico: a API expõe consultas do mart e a CLI `amazon-sales-warehouse` exporta resultados do warehouse para consumo externo.
-- Observabilidade entre execuções: manifests e métricas permitem listar runs recentes e comparar drift de KPIs entre batches.
-- Readiness operacional: a API expõe checks simples para dataset processado e camada de consulta analítica.
+1. Download or reuse the raw dataset in `data/raw/amazon_sales/`
+2. Persist a bronze snapshot for the current run
+3. Validate the raw contract and schema
+4. Clean, normalize, deduplicate, and enforce quality gates
+5. Persist the silver snapshot and the processed dataset
+6. Build features and publish the gold mart snapshot
+7. Materialize the warehouse layer in DuckDB when available
+8. Export tables, alerts, metrics, and figures
+9. Write `reports/runs/<run_id>/execution_manifest.json`
+10. Expose metrics and warehouse queries through API and CLI surfaces
 
-## Stack
+## Core Application Surfaces
 
-- Python 3.12+
-- pandas
-- pandera
-- duckdb
-- FastAPI
-- Streamlit
-- pytest
-- black, isort, ruff, mypy
-- GitHub Actions
+API:
 
-## Como executar
-
-### 1. Instalar dependencias
-
-```bash
-python -m pip install -e .[dev]
-```
-
-### 2. Configurar ambiente
-
-Use `.env.example` como base para um `.env` local.
-
-Variaveis principais:
-
-- `AMAZON_SALES_ENV`: ambiente logico (`dev`, `staging`, `prod`)
-- `AMAZON_SALES_LOG_LEVEL`: nivel de log
-- `AMAZON_SALES_ENABLE_DOWNLOAD`: habilita download do dataset
-- `AMAZON_SALES_DATA_DIR`: diretório base de dados
-- `AMAZON_SALES_REPORTS_DIR`: diretório base de artefatos
-- `AMAZON_SALES_MAX_DATA_STALENESS_DAYS`: limite de obsolescencia aceito no quality gate
-
-### 3. Rodar o pipeline
-
-```bash
-python main.py
-```
-
-Ou pelo entry point:
-
-```bash
-amazon-sales-pipeline
-```
-
-### 4. Rodar utilitarios operacionais
-
-```bash
-amazon-sales-alerts
-amazon-sales-scenario
-amazon-sales-warehouse
-streamlit run app/streamlit_app.py
-```
-
-### Consultar o warehouse
-
-```bash
-amazon-sales-warehouse --export-category-revenue
-```
-
-Endpoint disponível:
-
+- `GET /health`
+- `GET /health/ready`
+- `GET /metrics/summary`
+- `GET /metrics/opportunities`
+- `GET /alerts/discount-spikes`
 - `GET /warehouse/category-revenue`
 - `GET /pipeline/runs`
 - `GET /pipeline/runs/compare-latest`
-- `GET /health/ready`
+- `GET /operations/latest`
 
-Consultas operacionais pela CLI:
+CLI:
 
 ```bash
+amazon-sales-pipeline
+amazon-sales-pipeline --force-download
+amazon-sales-pipeline --fail-on-kpi-regression
+amazon-sales-alerts
+amazon-sales-scenario
+amazon-sales-warehouse --export-category-revenue
 amazon-sales-warehouse --show-run-history
 amazon-sales-warehouse --compare-latest-runs
+amazon-sales-warehouse --show-operational-summary
 ```
 
-O diff entre runs classifica drift por severidade (`stable`, `medium`, `high`, `critical`).
+## Runtime Layers
 
-## Qualidade local
+Configured through `src/amazon_sales_analysis/config.py`:
+
+- `data/raw/`
+- `data/bronze/`
+- `data/silver/`
+- `data/gold/`
+- `data/warehouse/`
+- `data/processed/`
+- `reports/figures/`
+- `reports/tables/`
+- `reports/metrics/`
+- `reports/runs/`
+
+## Package Taxonomy
+
+- `ingestion/`
+  Raw dataset acquisition and landing logic.
+- `transformations/`
+  Dataset loading, cleaning, normalization, deduplication, and processed outputs.
+- `validation/`
+  Raw contracts, schema enforcement, and clean-data quality gates.
+- `observability/`
+  Logging, KPI packaging, and regression-baseline controls.
+- `serving/`
+  Warehouse materialization, query services, run history, and operational summaries.
+- `pipelines/`
+  Shared runtime utilities for artifacts and execution manifests.
+
+Compatibility layer:
+
+- Top-level modules such as `data_ingestion.py`, `metrics.py`, `warehouse.py`, and `quality.py` remain available as stable import shims for existing callers.
+
+Shim policy:
+
+- New code should import from the domain packages, not from the compatibility shims.
+- Compatibility shims exist to preserve existing callers and test surfaces during package evolution.
+- Any new public symbol added to a shim must be re-exported explicitly and covered by contract tests.
+
+## Quality Workflow
 
 ```bash
 make quality
 make test
+make build-check
 ```
 
-## Testes
+Validation stack:
 
-A suíte cobre:
+- `black`
+- `isort`
+- `ruff`
+- `mypy`
+- `pytest`
+- `python -m build`
+- GitHub Actions CI
 
-- contrato do dado bruto
-- limpeza e normalizacao
-- quality gates
-- metricas de negocio
-- alertas
-- runtime operacional do pipeline
-- configuracao por ambiente
+## Repository Standards
 
-## CI/CD
-
-O workflow em [`.github/workflows/ci.yml`](/C:/Users/samue/PycharmProjects/amazon-sales-analysis/.github/workflows/ci.yml) executa:
-
-- format checks com `black` e `isort`
-- lint com `ruff`
-- type check com `mypy`
-- testes com cobertura
-
-## Decisoes tecnicas
-
-- O projeto manteve `pandas` em vez de migrar artificialmente para Spark. Para o volume e o objetivo de portfolio, isso preserva simplicidade sem sacrificar clareza.
-- A configuracao foi centralizada em `config.py` com suporte a `.env`, evitando hardcodes de caminho e ambiente.
-- O pipeline continua pequeno, mas ganhou camadas bronze/silver/gold, manifest de execucao rico e logging contextual para parecer e operar como um job real.
-- O mart em DuckDB e opcional por design: o pipeline nao quebra em ambientes sem o engine, mas deixa os artefatos SQL e o status de materializacao registrados.
-- O consumo do warehouse usa fallback para snapshot gold quando o DuckDB nao esta presente, preservando usabilidade local sem esconder a diferenca de capacidade.
-- O historico de runs e baseado em manifests locais; ele e suficiente para portfolio e troubleshooting local, mas nao substitui telemetry centralizada.
-- A estrutura nao foi quebrada em dezenas de subpacotes artificiais. Foram adicionadas apenas abstrações com efeito operacional mensuravel.
+- Keep business logic in `src/amazon_sales_analysis/`, not in notebooks or scripts
+- Treat exported data artifacts as generated outputs, not source-controlled assets
+- Prefer deterministic, testable transformations over ad hoc analysis code
+- Keep API and CLI surfaces thin and reusable
+- Document operational trade-offs explicitly
 
 ## Trade-offs
 
-- Nao ha orquestrador externo, scheduler ou warehouse real.
-- O download do Kaggle continua sendo dependente de credenciais locais quando necessario.
-- A validacao ainda e centrada em `pandas` e `pandera`, nao em um motor de qualidade mais completo como Great Expectations.
-- O warehouse local ainda e single-node e atende mais ao objetivo de portfolio e reproducibilidade do que a concorrencia de workloads reais.
+- No external scheduler or orchestrator
+- No centralized telemetry or alerting backend
+- DuckDB is local and optional, not a distributed warehouse
+- Run history is derived from local manifests instead of a remote metadata store
+- Operational summary is local-file based rather than backed by a metadata service
 
-## Roadmap
+## Documentation
 
-- persistencia em DuckDB ou warehouse local para analytics reproducivel
-- testes de regressao de metricas
-- particionamento de artefatos e manifests por data de processamento
-- deploy do app e publicacao de releases com changelog automatizado
+- Structure guide: [docs/REPOSITORY_STRUCTURE.md](/C:/Users/samue/PycharmProjects/amazon-sales-analysis/docs/REPOSITORY_STRUCTURE.md)
+- International overview: [docs/README.en.md](/C:/Users/samue/PycharmProjects/amazon-sales-analysis/docs/README.en.md)
+- PT-BR overview: [docs/README.pt-BR.md](/C:/Users/samue/PycharmProjects/amazon-sales-analysis/docs/README.pt-BR.md)
+- PT-PT overview: [docs/README.pt-PT.md](/C:/Users/samue/PycharmProjects/amazon-sales-analysis/docs/README.pt-PT.md)
+
+## Contact
+
+- GitHub: https://github.com/samuelmaia-analytics
+- LinkedIn: https://linkedin.com/in/samuelmaia-analytics

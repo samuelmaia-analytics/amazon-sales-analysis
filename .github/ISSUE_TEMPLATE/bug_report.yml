@@ -1,33 +1,71 @@
 name: Bug Report
-description: Report a defect or regression in the analytics pipeline, API, or dashboard.
+description: Report a defect, regression, data quality issue, or operational failure.
 title: "[Bug]: "
 labels: ["bug"]
 body:
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      options:
+        - critical
+        - high
+        - medium
+        - low
+    validations:
+      required: true
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Affected surface
+      options:
+        - pipeline
+        - api
+        - warehouse
+        - streamlit
+        - tests
+        - docs
+    validations:
+      required: true
   - type: textarea
     id: summary
     attributes:
       label: Summary
-      description: Describe the problem and expected behavior.
+      description: Describe the problem and the expected behavior.
     validations:
       required: true
   - type: textarea
-    id: steps
+    id: reproduction
     attributes:
-      label: Steps to reproduce
-      description: Provide a deterministic sequence of actions or input files.
+      label: Reproduction
+      description: Provide deterministic steps, inputs, and commands.
       placeholder: |
         1. Run ...
-        2. Open ...
+        2. Use dataset/config ...
         3. Observe ...
     validations:
       required: true
   - type: textarea
     id: impact
     attributes:
-      label: Business or technical impact
-      description: Explain why this matters.
+      label: Impact
+      description: Explain business, operational, or engineering impact.
+    validations:
+      required: true
   - type: textarea
     id: evidence
     attributes:
-      label: Logs, traces, or screenshots
-      description: Paste the relevant evidence.
+      label: Logs and evidence
+      description: Paste logs, tracebacks, screenshots, or manifest excerpts.
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment details
+      description: Include branch, OS, Python version, and relevant config overrides.
+  - type: markdown
+    attributes:
+      value: |
+        Documentation references:
+        - International: `README.md`
+        - PT-BR: `docs/README.pt-BR.md`
+        - PT-PT: `docs/README.pt-PT.md`

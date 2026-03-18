@@ -1,32 +1,42 @@
-# Amazon Sales Analytics Pipeline (PT-BR)
+# Amazon Sales Analytics Platform (PT-BR)
 
-## Troca de Idioma
-- README principal: [../README.md](../README.md)
-- International: [README.en.md](README.en.md)
+## Selecao de Idioma
+
+- International: [../README.md](../README.md)
+- PT-BR: [README.pt-BR.md](README.pt-BR.md)
+- PT-PT: [README.pt-PT.md](README.pt-PT.md)
+- Contribuicao: [../CONTRIBUTING.md](../CONTRIBUTING.md)
+- Guia de estrutura: [REPOSITORY_STRUCTURE.md](REPOSITORY_STRUCTURE.md)
 
 ## Resumo
 
-Este repositório deixou de ser apenas uma análise exploratória de vendas. Hoje ele funciona como um sistema analítico pequeno, mas orientado a produção, com:
+Este repositorio deixou de ser apenas uma analise exploratoria de vendas. Hoje ele funciona como um sistema analitico pequeno, mas orientado a producao, com:
 
 - camadas `raw`, `bronze`, `silver` e `gold`
 - contratos de schema e quality gates
-- manifests de execução com lineage, hashes e perfil de dataset
-- materialização opcional do mart em DuckDB
-- endpoints FastAPI para métricas, alertas, consultas analíticas e comparação entre execuções
-- checks de readiness para dataset processado e disponibilidade da camada analítica
-- CLIs para pipeline, alertas, cenários e operações de warehouse
+- manifests de execucao com lineage, hashes e perfil de dataset
+- materializacao opcional do mart em DuckDB
+- endpoints FastAPI para metricas, alertas, consultas analiticas e comparacao entre execucoes
+- checks de readiness para dataset processado e disponibilidade da camada analitica
+- CLIs para pipeline, alertas, cenarios e operacoes de warehouse
+
+## Fonte do Dataset
+
+- Dataset Kaggle: `aliiihussain/amazon-sales-dataset`
+- Download via `kagglehub`
+- Caminho bruto local: `data/raw/amazon_sales/amazon_sales_dataset.csv`
 
 ## O Que o Projeto Resolve
 
-O projeto foi estruturado para responder perguntas recorrentes de operação comercial, como:
+O projeto foi estruturado para responder perguntas recorrentes de operacao comercial, como:
 
 - quanto revenue foi gerado e quanto foi perdido por leakage de desconto
-- quais categorias concentram receita e pressão promocional
-- se a tendência mensal está acelerando ou caindo
-- onde existem spikes de desconto que exigem ação
-- como os KPIs mudaram entre a última execução e a anterior
+- quais categorias concentram receita e pressao promocional
+- se a tendencia mensal esta a acelerar ou a cair
+- onde existem spikes de desconto que exigem acao
+- como os KPIs mudaram entre a ultima execucao e a anterior
 
-## Visão de Arquitetura
+## Visao da Arquitetura
 
 ```text
 data/
@@ -43,21 +53,28 @@ reports/
 `-- runs/<run_id>/execution_manifest.json
 ```
 
-Módulos centrais:
+Pacotes de dominio:
 
-- `config.py`: configuração por ambiente
-- `data_ingestion.py`: obtenção/reuso da camada bruta
-- `data_preprocessing.py`: limpeza, normalização e deduplicação
-- `quality.py`: quality gates com freshness e unicidade de chave de negócio
-- `warehouse.py`: materialização do mart em DuckDB
-- `warehouse_service.py`: serving de consultas com fallback DuckDB-ou-CSV
-- `run_history.py`: histórico de execuções e comparação de drift de KPIs
+- `ingestion/`: aquisicao do dataset bruto e reuso da camada local
+- `transformations/`: leitura, limpeza, normalizacao e outputs processados
+- `validation/`: contratos, schema checks e quality gates
+- `observability/`: logging, empacotamento de KPIs e controlo de regressao
+- `serving/`: materializacao do warehouse, query services, historico de runs e operational summaries
+- `pipelines/`: utilitarios de runtime para artefactos e manifests
+
+Politica de shims:
+
+- Modulos de topo como `data_ingestion.py`, `metrics.py` e `warehouse.py` sao shims explicitos de compatibilidade.
+- Novo codigo deve importar a partir dos pacotes de dominio.
+- Os exports dos shims sao mantidos de forma estavel e validados por testes de contrato de distribuicao.
 
 ## Como Executar
 
 ```bash
 python -m pip install -e .[dev]
 amazon-sales-pipeline
+amazon-sales-pipeline --force-download
+amazon-sales-pipeline --fail-on-kpi-regression
 ```
 
 Entrypoints adicionais:
@@ -72,61 +89,59 @@ streamlit run app/streamlit_app.py
 
 ## Consultas de Warehouse
 
-Exportar receita por categoria:
-
 ```bash
 amazon-sales-warehouse --export-category-revenue
-```
-
-Inspecionar histórico de runs:
-
-```bash
 amazon-sales-warehouse --show-run-history
 amazon-sales-warehouse --compare-latest-runs
+amazon-sales-warehouse --show-operational-summary
 ```
 
-Endpoints disponíveis:
+Endpoints disponiveis:
 
 - `GET /metrics/summary`
 - `GET /alerts/discount-spikes`
 - `GET /warehouse/category-revenue`
 - `GET /pipeline/runs`
 - `GET /pipeline/runs/compare-latest`
+- `GET /operations/latest`
 - `GET /health/ready`
 
-## Características de Engenharia
+## Caracteristicas de Engenharia
 
-- Saídas idempotentes para os principais artefatos
-- Escrita atômica para CSVs e JSONs críticos
+- Saidas idempotentes para os principais artefactos
+- Escrita atomica para CSVs e JSONs criticos
 - Reuso do dataset bruto local para reprocessamento
-- Validações de domínio, freshness e unicidade de chave de negócio
-- Manifest por execução com hashes, contagem de linhas e perfil dos datasets
+- Validacoes de dominio, freshness e unicidade de chave de negocio
+- Manifest por execucao com hashes, contagem de linhas e perfil dos datasets
 - Warehouse local opcional com SQL versionado
-- Comparação de drift de KPIs entre execuções recentes
-- Classificação de severidade de drift (`stable`, `medium`, `high`, `critical`)
+- Comparacao de drift de KPIs entre execucoes recentes
+- Classificacao de severidade de drift (`stable`, `medium`, `high`, `critical`)
 
 ## Comandos de Qualidade
 
 ```bash
 make quality
 make test
+make build-check
 ```
 
-## Status de Validação
+## Estado de Validacao
 
-O repositório é validado com:
+O repositorio e validado com:
 
 - `ruff check .`
 - `mypy src tests app alerts scripts`
 - `pytest`
+- `python -m build --sdist --wheel`
 
 ## Trade-offs
 
-- Não há orquestrador externo nem observabilidade centralizada
-- O DuckDB é local e opcional, não um warehouse distribuído
-- O histórico de runs é baseado em manifests locais, não em telemetry remota
+- Nao ha orquestrador externo nem observabilidade centralizada
+- O DuckDB e local e opcional, nao um warehouse distribuido
+- O historico de runs e baseado em manifests locais, nao em telemetria remota
 
-## Contato
+## Automacao
 
-- GitHub: https://github.com/samuelmaia-analytics
-- LinkedIn: https://linkedin.com/in/samuelmaia-analytics
+- Pull requests e pushes executam lint, type checks, testes e validacao de build
+- Tags de release repetem a mesma quality gate antes da publicacao
+- O CI pode ser agendado para validacao recorrente mesmo sem novos commits

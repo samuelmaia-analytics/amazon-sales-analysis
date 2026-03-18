@@ -1,8 +1,12 @@
-# Amazon Sales Analytics Pipeline (International)
+# Amazon Sales Analytics Platform (International)
 
 ## Language Switch
-- Main README: [../README.md](../README.md)
+
+- International: [../README.md](../README.md)
 - PT-BR: [README.pt-BR.md](README.pt-BR.md)
+- PT-PT: [README.pt-PT.md](README.pt-PT.md)
+- Contributing: [../CONTRIBUTING.md](../CONTRIBUTING.md)
+- Structure guide: [REPOSITORY_STRUCTURE.md](REPOSITORY_STRUCTURE.md)
 
 ## Summary
 
@@ -15,6 +19,12 @@ This repository is no longer just a notebook-style sales analysis. It is a small
 - FastAPI endpoints for metrics, alerts, warehouse queries, and run-history comparison
 - readiness checks for processed data and analytical query availability
 - CLI entry points for pipeline, alerts, scenarios, and warehouse operations
+
+## Dataset Source
+
+- Kaggle dataset: `aliiihussain/amazon-sales-dataset`
+- Downloaded through `kagglehub`
+- Raw landing path: `data/raw/amazon_sales/amazon_sales_dataset.csv`
 
 ## What It Solves
 
@@ -43,21 +53,28 @@ reports/
 `-- runs/<run_id>/execution_manifest.json
 ```
 
-Core modules:
+Domain packages:
 
-- `config.py`: environment-aware settings
-- `data_ingestion.py`: raw dataset retrieval/reuse
-- `data_preprocessing.py`: cleaning, normalization, deduplication
-- `quality.py`: quality gates including freshness and business-key uniqueness
-- `warehouse.py`: DuckDB mart materialization
-- `warehouse_service.py`: query-serving with DuckDB-or-CSV fallback
-- `run_history.py`: run summary and KPI drift comparison
+- `ingestion/`: raw dataset acquisition and local landing reuse
+- `transformations/`: loading, cleaning, normalization, and processed outputs
+- `validation/`: contracts, schema checks, and quality gates
+- `observability/`: logging, KPI packaging, and regression controls
+- `serving/`: warehouse materialization, query services, run history, and operational summaries
+- `pipelines/`: artifact and manifest runtime helpers
+
+Compatibility policy:
+
+- Top-level modules such as `data_ingestion.py`, `metrics.py`, and `warehouse.py` are explicit compatibility shims.
+- New code should import from the domain packages.
+- Shim exports are kept stable and validated by distribution contract tests.
 
 ## Run
 
 ```bash
 python -m pip install -e .[dev]
 amazon-sales-pipeline
+amazon-sales-pipeline --force-download
+amazon-sales-pipeline --fail-on-kpi-regression
 ```
 
 Additional entry points:
@@ -72,17 +89,11 @@ streamlit run app/streamlit_app.py
 
 ## Warehouse Queries
 
-Export category revenue:
-
 ```bash
 amazon-sales-warehouse --export-category-revenue
-```
-
-Inspect run history:
-
-```bash
 amazon-sales-warehouse --show-run-history
 amazon-sales-warehouse --compare-latest-runs
+amazon-sales-warehouse --show-operational-summary
 ```
 
 API endpoints:
@@ -92,6 +103,7 @@ API endpoints:
 - `GET /warehouse/category-revenue`
 - `GET /pipeline/runs`
 - `GET /pipeline/runs/compare-latest`
+- `GET /operations/latest`
 - `GET /health/ready`
 
 ## Engineering Characteristics
@@ -110,6 +122,7 @@ API endpoints:
 ```bash
 make quality
 make test
+make build-check
 ```
 
 ## Validation Status
@@ -119,6 +132,7 @@ Current repository validation includes:
 - `ruff check .`
 - `mypy src tests app alerts scripts`
 - `pytest`
+- `python -m build --sdist --wheel`
 
 ## Trade-offs
 
@@ -126,7 +140,8 @@ Current repository validation includes:
 - DuckDB is local and optional, not a distributed warehouse
 - Run history is based on local manifests rather than remote telemetry
 
-## Contact
+## Automation
 
-- GitHub: https://github.com/samuelmaia-analytics
-- LinkedIn: https://linkedin.com/in/samuelmaia-analytics
+- Pull requests and pushes run lint, type checks, tests, and package build validation
+- Release tags re-run the same quality gate before publishing
+- CI can be scheduled to provide recurring validation even without new commits

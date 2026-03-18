@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import argparse
-import json
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, cast
@@ -9,8 +8,10 @@ from typing import Any, cast
 import pandas as pd
 
 from amazon_sales_analysis import __version__
-from amazon_sales_analysis.config import PROCESSED_DATA_DIR, TABLES_DIR
+from amazon_sales_analysis.config import get_settings
+from amazon_sales_analysis.pipelines.runtime import write_dataframe_artifact, write_json_artifact
 from amazon_sales_analysis.scenario_simulator import simulate_leakage_recovery
+from amazon_sales_analysis.transformations.data_preprocessing import read_sales_dataset
 
 
 def parse_category_rates(raw_value: str) -> dict[str, float]:
@@ -43,19 +44,20 @@ def build_recovery_rates(
 
 
 def build_parser() -> argparse.ArgumentParser:
+    settings = get_settings()
     parser = argparse.ArgumentParser(
         description="Run leakage recovery simulation by category and persist the artifacts."
     )
     parser.add_argument(
         "--input",
         type=Path,
-        default=PROCESSED_DATA_DIR / "amazon_sales_clean.csv",
+        default=settings.processed_data_dir / "amazon_sales_clean.csv",
         help="Path to the processed input CSV.",
     )
     parser.add_argument(
         "--output-dir",
         type=Path,
-        default=TABLES_DIR,
+        default=settings.tables_dir,
         help="Output directory for the generated artifacts.",
     )
     parser.add_argument(
@@ -79,7 +81,8 @@ def run(*, input_path: Path, output_dir: Path, recovery_rate: float, category_ra
     if recovery_rate < 0 or recovery_rate > 1:
         raise SystemExit("--recovery-rate must be between 0.0 and 1.0.")
 
-    frame = pd.read_csv(input_path, parse_dates=["order_date"])
+    frame = read_sales_dataset(input_path)
+    frame["order_date"] = pd.to_datetime(frame["order_date"], errors="coerce")
     categories = sorted(frame["product_category"].dropna().astype(str).unique().tolist())
     overrides = parse_category_rates(category_rates)
     recovery_rates = build_recovery_rates(categories, recovery_rate, overrides)
@@ -90,7 +93,7 @@ def run(*, input_path: Path, output_dir: Path, recovery_rate: float, category_ra
     summary_path = output_dir / "scenario_simulation_summary.json"
 
     breakdown = cast(pd.DataFrame, simulation["category_breakdown"])
-    breakdown.to_csv(breakdown_path, index=False)
+    write_dataframe_artifact(breakdown, breakdown_path)
 
     summary = {
         "pipeline_version": __version__,
@@ -106,7 +109,7 @@ def run(*, input_path: Path, output_dir: Path, recovery_rate: float, category_ra
         "simulated_nrr": float(cast(float, simulation["simulated_nrr"])),
         "total_uplift": float(cast(float, simulation["total_uplift"])),
     }
-    summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
+    write_json_artifact(summary, summary_path)
 
     print("Scenario simulation generated successfully.")
     print(f"- Breakdown: {breakdown_path}")

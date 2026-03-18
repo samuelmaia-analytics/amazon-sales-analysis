@@ -3,9 +3,10 @@ from __future__ import annotations
 import argparse
 
 from amazon_sales_analysis.config import get_settings
-from amazon_sales_analysis.logging_config import configure_logging
-from amazon_sales_analysis.run_history import compare_latest_runs, summarize_run_history
-from amazon_sales_analysis.warehouse_service import (
+from amazon_sales_analysis.observability.logging_config import configure_logging
+from amazon_sales_analysis.operations import latest_operational_summary
+from amazon_sales_analysis.serving.run_history import compare_latest_runs, summarize_run_history
+from amazon_sales_analysis.serving.warehouse_service import (
     export_category_revenue_query,
     warehouse_query_metadata,
 )
@@ -30,6 +31,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Print KPI deltas between the latest run and the previous one.",
     )
+    parser.add_argument(
+        "--show-operational-summary",
+        action="store_true",
+        help="Print the consolidated operational status of the latest run.",
+    )
     return parser
 
 
@@ -50,7 +56,10 @@ def main() -> None:
                 f"clean_rows={run['clean_rows']} | alerts={run['alerts']}"
             )
     elif args.compare_latest_runs:
-        comparison = compare_latest_runs(settings=settings)
+        try:
+            comparison = compare_latest_runs(settings=settings)
+        except ValueError as exc:
+            raise SystemExit(str(exc)) from exc
         print(
             f"Comparing {comparison['latest_run_id']} vs {comparison['previous_run_id']} "
             f"(severity={comparison['overall_severity']}):"
@@ -61,6 +70,18 @@ def main() -> None:
                 f"delta={values['delta']} ratio={values['delta_ratio']:.4f} "
                 f"severity={values['severity']}"
             )
+    elif args.show_operational_summary:
+        try:
+            summary = latest_operational_summary(settings=settings)
+        except FileNotFoundError as exc:
+            raise SystemExit(str(exc)) from exc
+        print(
+            f"Latest run {summary['run_id']} | status={summary['overall_status']} | "
+            f"pipeline_version={summary['pipeline_version']}"
+        )
+        print(f"- quality_gates: {summary['quality_gates']['status']}")
+        print(f"- metrics_regression: {summary['metrics_regression']['status']}")
+        print(f"- warehouse_validation: {summary['warehouse_validation']['status']}")
     else:
         print("Warehouse metadata:")
         for key, value in metadata.items():

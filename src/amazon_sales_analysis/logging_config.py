@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 
-from .config import get_settings
+from amazon_sales_analysis.config import get_settings
 
 LOG_FORMAT = (
     "%(asctime)s | %(levelname)s | env=%(environment)s | run_id=%(run_id)s | "

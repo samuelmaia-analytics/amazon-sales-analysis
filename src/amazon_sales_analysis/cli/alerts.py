@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import argparse
-import json
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -12,17 +11,20 @@ from amazon_sales_analysis.anomaly_detection import (
     detect_discount_spikes,
     export_discount_spike_alerts,
 )
-from amazon_sales_analysis.config import METRICS_DIR, PROCESSED_DATA_DIR
+from amazon_sales_analysis.config import get_settings
+from amazon_sales_analysis.pipelines.runtime import write_json_artifact
+from amazon_sales_analysis.transformations.data_preprocessing import read_sales_dataset
 
 
 def build_parser() -> argparse.ArgumentParser:
+    settings = get_settings()
     parser = argparse.ArgumentParser(
         description="Generate operational discount spike alerts with standardized outputs."
     )
     parser.add_argument(
         "--input",
         type=Path,
-        default=PROCESSED_DATA_DIR / "amazon_sales_clean.csv",
+        default=settings.processed_data_dir / "amazon_sales_clean.csv",
         help="Path to the processed CSV input.",
     )
     parser.add_argument(
@@ -40,7 +42,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--summary-output",
         type=Path,
-        default=METRICS_DIR / "alerts_summary.json",
+        default=settings.metrics_dir / "alerts_summary.json",
         help="Path to the JSON operational summary.",
     )
     return parser
@@ -56,7 +58,8 @@ def run(
     if min_observations < 2:
         raise SystemExit("--min-observations must be greater than or equal to 2.")
 
-    frame = pd.read_csv(input_path, parse_dates=["order_date"])
+    frame = read_sales_dataset(input_path)
+    frame["order_date"] = pd.to_datetime(frame["order_date"], errors="coerce")
     alerts = detect_discount_spikes(
         frame,
         z_threshold=z_threshold,
@@ -82,8 +85,7 @@ def run(
         "alerts_count": int(len(alerts)),
         "severity_counts": {str(key): int(value) for key, value in severity_counts.items()},
     }
-    summary_output.parent.mkdir(parents=True, exist_ok=True)
-    summary_output.write_text(json.dumps(summary, indent=2), encoding="utf-8")
+    write_json_artifact(summary, summary_output)
 
     print("Operational alerts generated successfully.")
     print(f"- Alerts CSV:   {alerts_csv_path}")

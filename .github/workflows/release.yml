@@ -56,8 +56,9 @@ jobs:
           black --check .
           isort --check-only .
           ruff check .
-          mypy src scripts app alerts
+          mypy src tests app alerts scripts
           pytest
+          python -m build --sdist --wheel
 
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2

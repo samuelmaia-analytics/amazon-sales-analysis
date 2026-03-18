@@ -83,6 +83,27 @@ class PipelineRunContext:
             manifest_path=artifact_dir / "execution_manifest.json",
         )
 
+    @property
+    def status_path(self) -> Path:
+        return self.artifact_dir / "run_status.json"
+
+    def completion_payload(
+        self, *, status: str, error_message: str | None = None, completed_at_utc: str | None = None
+    ) -> dict[str, Any]:
+        completed_at = completed_at_utc or datetime.now(UTC).isoformat()
+        started_at = datetime.fromisoformat(self.started_at_utc)
+        finished_at = datetime.fromisoformat(completed_at)
+        duration_seconds = max((finished_at - started_at).total_seconds(), 0.0)
+        return {
+            "run_id": self.run_id,
+            "environment": self.environment,
+            "started_at_utc": self.started_at_utc,
+            "completed_at_utc": completed_at,
+            "duration_seconds": round(duration_seconds, 3),
+            "status": status,
+            "error_message": error_message or "",
+        }
+
     def manifest_payload(
         self,
         *,
@@ -98,7 +119,15 @@ class PipelineRunContext:
         row_counts: dict[str, int],
         layer_outputs: dict[str, Path] | None = None,
         data_profiles: dict[str, dict[str, Any]] | None = None,
+        status: str = "succeeded",
+        error_message: str | None = None,
+        completed_at_utc: str | None = None,
     ) -> dict[str, Any]:
+        completion = self.completion_payload(
+            status=status,
+            error_message=error_message,
+            completed_at_utc=completed_at_utc,
+        )
         table_artifacts = {
             name: {
                 "path": str(path),
@@ -117,6 +146,10 @@ class PipelineRunContext:
             "run_id": self.run_id,
             "environment": self.environment,
             "started_at_utc": self.started_at_utc,
+            "completed_at_utc": completion["completed_at_utc"],
+            "duration_seconds": completion["duration_seconds"],
+            "status": completion["status"],
+            "error_message": completion["error_message"],
             "pipeline_version": pipeline_version,
             "dataset_path": str(dataset_path),
             "outputs": {

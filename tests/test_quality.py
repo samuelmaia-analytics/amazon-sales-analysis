@@ -2,7 +2,11 @@ import pandas as pd
 import pytest
 
 from amazon_sales_analysis.config import Settings
-from amazon_sales_analysis.quality import enforce_clean_quality_gates, summarize_quality_gates
+from amazon_sales_analysis.quality import (
+    enforce_clean_quality_gates,
+    export_quality_gate_report,
+    summarize_quality_gates,
+)
 
 
 def _base_df() -> pd.DataFrame:
@@ -65,6 +69,8 @@ def test_quality_gate_rejects_stale_dataset(tmp_path) -> None:
         log_level="INFO",
         enable_dataset_download=True,
         max_data_staleness_days=30,
+        kpi_regression_tolerance_pct=0.15,
+        warehouse_materialization_mode="replace",
     )
 
     with pytest.raises(ValueError, match="data_freshness_days"):
@@ -75,3 +81,35 @@ def test_quality_summary_includes_thresholds() -> None:
     summary = summarize_quality_gates(_base_df())
 
     assert {"check", "status", "value", "threshold", "message"} <= set(summary.columns)
+
+
+def test_quality_report_is_exported(tmp_path) -> None:
+    settings = Settings(
+        environment="test",
+        project_root=tmp_path,
+        data_dir=tmp_path / "data",
+        raw_data_dir=tmp_path / "data" / "raw",
+        bronze_data_dir=tmp_path / "data" / "bronze",
+        silver_data_dir=tmp_path / "data" / "silver",
+        gold_data_dir=tmp_path / "data" / "gold",
+        warehouse_dir=tmp_path / "data" / "warehouse",
+        warehouse_db_path=tmp_path / "data" / "warehouse" / "amazon_sales.duckdb",
+        processed_data_dir=tmp_path / "data" / "processed",
+        external_data_dir=tmp_path / "data" / "external",
+        reports_dir=tmp_path / "reports",
+        figures_dir=tmp_path / "reports" / "figures",
+        tables_dir=tmp_path / "reports" / "tables",
+        metrics_dir=tmp_path / "reports" / "metrics",
+        contracts_dir=tmp_path / "contracts",
+        pipeline_runs_dir=tmp_path / "reports" / "runs",
+        kaggle_dataset="demo/dataset",
+        log_level="INFO",
+        enable_dataset_download=True,
+        max_data_staleness_days=45,
+        kpi_regression_tolerance_pct=0.15,
+        warehouse_materialization_mode="replace",
+    )
+
+    output_path = export_quality_gate_report(_base_df(), settings=settings)
+
+    assert output_path.exists()

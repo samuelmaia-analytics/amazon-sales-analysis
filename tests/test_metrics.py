@@ -3,7 +3,13 @@ import json
 import pandas as pd
 
 from amazon_sales_analysis.feature_engineering import build_features
-from amazon_sales_analysis.metrics import collect_product_metrics, save_product_metrics
+from amazon_sales_analysis.metrics import (
+    build_metrics_regression_report,
+    collect_product_metrics,
+    save_metrics_baseline,
+    save_metrics_regression_report,
+    save_product_metrics,
+)
 
 
 def _base_df() -> pd.DataFrame:
@@ -75,3 +81,43 @@ def test_save_product_metrics_writes_json(tmp_path) -> None:
     )
     payload = json.loads(saved_path.read_text(encoding="utf-8"))
     assert payload["metrics_version"] == "1.0.0"
+
+
+def test_metrics_regression_report_flags_significant_drift(tmp_path) -> None:
+    current_metrics: dict[str, float | int] = {
+        "total_revenue": 130.0,
+        "gross_revenue": 140.0,
+        "discount_leakage": 10.0,
+        "north_star_nrr": 0.85,
+        "total_orders": 2,
+        "avg_ticket": 65.0,
+        "clean_row_count": 2,
+        "row_retention_rate": 1.0,
+    }
+    baseline_metrics: dict[str, float | int] = {
+        "total_revenue": 100.0,
+        "gross_revenue": 110.0,
+        "discount_leakage": 10.0,
+        "north_star_nrr": 0.9,
+        "total_orders": 2,
+        "avg_ticket": 50.0,
+        "clean_row_count": 2,
+        "row_retention_rate": 1.0,
+    }
+    settings = type(
+        "SettingsStub",
+        (),
+        {"metrics_dir": tmp_path, "kpi_regression_tolerance_pct": 0.15},
+    )()
+
+    save_metrics_baseline(baseline_metrics, settings=settings)
+    report = build_metrics_regression_report(
+        current_metrics,
+        settings=settings,
+        baseline_metrics=baseline_metrics,
+    )
+    report_path = save_metrics_regression_report(report, settings=settings)
+
+    stored_report = json.loads(report_path.read_text(encoding="utf-8"))
+    assert stored_report["status"] == "fail"
+    assert "total_revenue" in stored_report["failed_metrics"]
