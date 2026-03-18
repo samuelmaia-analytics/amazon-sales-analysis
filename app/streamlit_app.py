@@ -1,14 +1,18 @@
 from pathlib import Path
+from typing import Any, cast
 
 import pandas as pd
 import plotly.express as px
 import streamlit as st
 
-from amazon_sales_analysis.config import PROCESSED_DATA_DIR
+from amazon_sales_analysis.config import PROCESSED_DATA_DIR, get_settings
 from amazon_sales_analysis.insights import generate_executive_insights
 from amazon_sales_analysis.sales_analysis import build_executive_report, prepare_sales_frame
+from amazon_sales_analysis.serving.operations import latest_operational_summary
+from amazon_sales_analysis.serving.run_history import compare_latest_runs, summarize_run_history
 from amazon_sales_analysis.transformations.data_preprocessing import read_sales_dataset
 from amazon_sales_analysis.validation.quality import summarize_quality_gates
+from amazon_sales_analysis.warehouse_service import warehouse_query_metadata
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 DATASET_PATH = PROCESSED_DATA_DIR / "amazon_sales_clean.csv"
@@ -34,6 +38,36 @@ def format_percent(value: float) -> str:
     return f"{value * 100:.2f}%"
 
 
+def _as_mapping(value: object) -> dict[str, Any]:
+    return cast(dict[str, Any], value if isinstance(value, dict) else {})
+
+
+@st.cache_data(ttl=300)
+def load_operational_summary() -> dict[str, object] | None:
+    try:
+        return latest_operational_summary()
+    except FileNotFoundError:
+        return None
+
+
+@st.cache_data(ttl=300)
+def load_run_history() -> list[dict[str, object]]:
+    return summarize_run_history(limit=5)
+
+
+@st.cache_data(ttl=300)
+def load_run_comparison() -> dict[str, object] | None:
+    try:
+        return compare_latest_runs()
+    except ValueError:
+        return None
+
+
+@st.cache_data(ttl=300)
+def load_warehouse_metadata() -> dict[str, object]:
+    return warehouse_query_metadata()
+
+
 def main() -> None:
     st.title("Amazon Commercial Performance Monitor")
     st.caption(
@@ -50,6 +84,11 @@ def main() -> None:
     insights = generate_executive_insights(df)
     report = build_executive_report(df, insights)
     kpi_lookup = dict(zip(report.kpi_summary["metric"], report.kpi_summary["value"], strict=False))
+    operational_summary = load_operational_summary()
+    run_history = load_run_history()
+    run_comparison = load_run_comparison()
+    warehouse_metadata = load_warehouse_metadata()
+    settings = get_settings()
 
     col1, col2, col3, col4 = st.columns(4)
     col1.metric("Revenue total", format_currency(float(kpi_lookup["total_revenue"])))
@@ -57,8 +96,14 @@ def main() -> None:
     col3.metric("Pedidos", f"{int(kpi_lookup['total_orders']):,}")
     col4.metric("NRR", f"{float(kpi_lookup['net_revenue_retained']) * 100:.1f}%")
 
-    tab1, tab2, tab3, tab4 = st.tabs(
-        ["Resumo Executivo", "Drivers de Performance", "Qualidade", "Catalogo de KPIs"]
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(
+        [
+            "Resumo Executivo",
+            "Drivers de Performance",
+            "Qualidade",
+            "Operacoes",
+            "Catalogo de KPIs",
+        ]
     )
 
     with tab1:
@@ -142,6 +187,88 @@ def main() -> None:
         st.dataframe(summarize_quality_gates(df), use_container_width=True, hide_index=True)
 
     with tab4:
+        st.subheader("Saude Operacional")
+        if operational_summary is None:
+            st.warning("Nenhum run operacional foi encontrado ainda.")
+        else:
+            status_cols = st.columns(4)
+            run_status = _as_mapping(operational_summary.get("run_status", {}))
+            quality_status = _as_mapping(operational_summary.get("quality_gates", {}))
+            metrics_status = _as_mapping(operational_summary.get("metrics_regression", {}))
+            warehouse_status = _as_mapping(operational_summary.get("warehouse_validation", {}))
+
+            status_cols[0].metric(
+                "Status do run", str(run_status.get("status", operational_summary["overall_status"]))
+            )
+            status_cols[1].metric(
+                "Duracao (s)",
+                f"{float(run_status.get('duration_seconds', 0.0)):.1f}",
+            )
+            status_cols[2].metric("Quality gates", str(quality_status.get("status", "unknown")))
+            status_cols[3].metric(
+                "Warehouse",
+                str(warehouse_status.get("status", "unknown")),
+            )
+
+            st.caption(
+                "Ultimo run: "
+                f"{operational_summary['run_id']} | "
+                f"pipeline_version={operational_summary['pipeline_version']}"
+            )
+
+            operational_cards = pd.DataFrame(
+                [
+                    {
+                        "component": "quality_gates",
+                        "status": quality_status.get("status", "unknown"),
+                        "details": quality_status.get("path", ""),
+                    },
+                    {
+                        "component": "metrics_regression",
+                        "status": metrics_status.get("status", "unknown"),
+                        "details": ", ".join(metrics_status.get("failed_metrics", []))
+                        if isinstance(metrics_status.get("failed_metrics"), list)
+                        else "",
+                    },
+                    {
+                        "component": "warehouse_validation",
+                        "status": warehouse_status.get("status", "unknown"),
+                        "details": warehouse_status.get("reason", warehouse_status.get("path", "")),
+                    },
+                ]
+            )
+            st.dataframe(operational_cards, use_container_width=True, hide_index=True)
+
+        st.subheader("Historico Recente de Runs")
+        if run_history:
+            history_df = pd.DataFrame(run_history)
+            st.dataframe(history_df, use_container_width=True, hide_index=True)
+        else:
+            st.info("Historico de runs ainda nao disponivel.")
+
+        st.subheader("Drift Entre Ultimos Runs")
+        if run_comparison is None:
+            st.info("Sao necessarios pelo menos dois runs para comparar drift de KPIs.")
+        else:
+            st.metric("Severidade geral", str(run_comparison["overall_severity"]))
+            drift_df = (
+                pd.DataFrame(cast(dict[str, Any], run_comparison["kpi_deltas"]))
+                .T.reset_index()
+                .rename(columns={"index": "metric"})
+            )
+            st.dataframe(drift_df, use_container_width=True, hide_index=True)
+
+        st.subheader("Camada Analitica")
+        warehouse_cols = st.columns(3)
+        warehouse_cols[0].metric(
+            "DuckDB disponivel",
+            "yes" if bool(warehouse_metadata.get("duckdb_available", False)) else "no",
+        )
+        warehouse_cols[1].metric("Tabela", str(warehouse_metadata.get("warehouse_table", "unknown")))
+        warehouse_cols[2].metric("Ambiente", settings.environment)
+        st.caption(str(warehouse_metadata.get("warehouse_db_path", "")))
+
+    with tab5:
         st.subheader("KPIs definidos")
         st.dataframe(report.kpi_catalog, use_container_width=True, hide_index=True)
 
