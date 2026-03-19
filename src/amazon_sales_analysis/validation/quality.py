@@ -124,7 +124,9 @@ def export_quality_gate_report(df: pd.DataFrame, settings: Settings | None = Non
     payload = {
         "status": (
             "fail"
-            if any(item.status == "fail" for item in build_quality_gate_report(df, resolved_settings))
+            if any(
+                item.status == "fail" for item in build_quality_gate_report(df, resolved_settings)
+            )
             else "pass"
         ),
         "checks": [

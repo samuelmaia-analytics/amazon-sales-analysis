@@ -226,9 +226,7 @@ def run(*, force_download: bool = False, fail_on_kpi_regression: bool = False) -
             row_counts=manifest_payload["row_counts"],
             quality_report=_json_artifact_or_missing(quality_report_path),
             metrics_regression=_json_artifact_or_missing(metrics_regression_path),
-            warehouse_validation=_json_artifact_or_missing(
-                warehouse_result.validation_output_path
-            ),
+            warehouse_validation=_json_artifact_or_missing(warehouse_result.validation_output_path),
         )
         operational_summary_path = write_operational_summary(
             operational_summary,

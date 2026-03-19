@@ -45,7 +45,9 @@ def _as_mapping(value: object) -> dict[str, Any]:
 
 def load_custom_css() -> None:
     if CUSTOM_CSS_PATH.exists():
-        st.markdown(f"<style>{CUSTOM_CSS_PATH.read_text(encoding='utf-8')}</style>", unsafe_allow_html=True)
+        st.markdown(
+            f"<style>{CUSTOM_CSS_PATH.read_text(encoding='utf-8')}</style>", unsafe_allow_html=True
+        )
 
 
 @st.cache_data(ttl=300)
@@ -76,7 +78,10 @@ def load_warehouse_metadata() -> dict[str, object]:
 
 def main() -> None:
     load_custom_css()
-    st.markdown("<div class='main-header'>Amazon Commercial Performance Monitor</div>", unsafe_allow_html=True)
+    st.markdown(
+        "<div class='main-header'>Amazon Commercial Performance Monitor</div>",
+        unsafe_allow_html=True,
+    )
     st.markdown(
         "<div class='sub-header'>Monitoramento de performance comercial com foco em revenue, "
         "ticket medio, categorias, produtos lideres, tendencia temporal e saude operacional.</div>",
@@ -245,9 +250,11 @@ def main() -> None:
                         {
                             "component": "metrics_regression",
                             "status": metrics_status.get("status", "unknown"),
-                            "details": ", ".join(metrics_status.get("failed_metrics", []))
-                            if isinstance(metrics_status.get("failed_metrics"), list)
-                            else "",
+                            "details": (
+                                ", ".join(metrics_status.get("failed_metrics", []))
+                                if isinstance(metrics_status.get("failed_metrics"), list)
+                                else ""
+                            ),
                         },
                         {
                             "component": "warehouse_validation",

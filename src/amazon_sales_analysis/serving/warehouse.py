@@ -78,9 +78,7 @@ def materialize_gold_mart(
     queries = warehouse_bootstrap_queries(settings=resolved_settings)
     materialization_mode = resolved_settings.warehouse_materialization_mode
     if materialization_mode not in {"replace", "append_history"}:
-        raise ValueError(
-            "warehouse_materialization_mode must be one of: replace, append_history"
-        )
+        raise ValueError("warehouse_materialization_mode must be one of: replace, append_history")
     _write_query_artifacts(resolved_settings, queries)
 
     if not duckdb_available():

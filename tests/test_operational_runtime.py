@@ -323,7 +323,9 @@ def test_pipeline_cli_main_orchestrates_pipeline_outputs(tmp_path, monkeypatch) 
     monkeypatch.setattr(pipeline_cli, "enforce_clean_quality_gates", lambda frame: None)
     monkeypatch.setattr(pipeline_cli, "save_processed_data", lambda frame: processed_path)
     monkeypatch.setattr(
-        pipeline_cli, "export_quality_gate_report", lambda frame, settings: metrics_path.parent / "quality_gates.json"
+        pipeline_cli,
+        "export_quality_gate_report",
+        lambda frame, settings: metrics_path.parent / "quality_gates.json",
     )
     monkeypatch.setattr(pipeline_cli, "prepare_sales_frame", lambda frame: featured_df)
     monkeypatch.setattr(pipeline_cli, "generate_executive_insights", lambda frame: insights)
@@ -358,7 +360,10 @@ def test_pipeline_cli_main_orchestrates_pipeline_outputs(tmp_path, monkeypatch) 
     monkeypatch.setattr(
         pipeline_cli,
         "build_metrics_regression_report",
-        lambda payload, settings, baseline_metrics: {"status": "baseline_initialized", "failed_metrics": []},
+        lambda payload, settings, baseline_metrics: {
+            "status": "baseline_initialized",
+            "failed_metrics": [],
+        },
     )
     monkeypatch.setattr(
         pipeline_cli,
@@ -366,7 +371,9 @@ def test_pipeline_cli_main_orchestrates_pipeline_outputs(tmp_path, monkeypatch) 
         lambda report, settings: metrics_path.parent / "product_metrics_regression.json",
     )
     monkeypatch.setattr(
-        pipeline_cli, "save_metrics_baseline", lambda payload, settings: metrics_path.parent / "product_metrics_baseline.json"
+        pipeline_cli,
+        "save_metrics_baseline",
+        lambda payload, settings: metrics_path.parent / "product_metrics_baseline.json",
     )
     monkeypatch.setattr(
         pipeline_cli,
@@ -465,25 +472,37 @@ def test_pipeline_cli_can_fail_on_kpi_regression(tmp_path, monkeypatch) -> None:
         "download_amazon_sales_dataset",
         lambda settings, force_download=False: tmp_path / "raw",
     )
-    monkeypatch.setattr(pipeline_cli, "load_raw_sales_data", lambda: pd.DataFrame({"order_id": [1]}))
+    monkeypatch.setattr(
+        pipeline_cli, "load_raw_sales_data", lambda: pd.DataFrame({"order_id": [1]})
+    )
     monkeypatch.setattr(pipeline_cli, "enforce_raw_contract", lambda frame: None)
     monkeypatch.setattr(pipeline_cli, "validate_raw_sales_data", lambda frame: frame)
     monkeypatch.setattr(
-        pipeline_cli, "export_contract_snapshot", lambda contract_version: tmp_path / "contracts" / "snapshot.json"
+        pipeline_cli,
+        "export_contract_snapshot",
+        lambda contract_version: tmp_path / "contracts" / "snapshot.json",
     )
-    monkeypatch.setattr(pipeline_cli, "clean_sales_data", lambda frame: pd.DataFrame({"order_id": [1]}))
+    monkeypatch.setattr(
+        pipeline_cli, "clean_sales_data", lambda frame: pd.DataFrame({"order_id": [1]})
+    )
     monkeypatch.setattr(pipeline_cli, "enforce_clean_quality_gates", lambda frame: None)
     monkeypatch.setattr(
-        pipeline_cli, "save_processed_data", lambda frame: tmp_path / "processed" / "amazon_sales_clean.csv"
+        pipeline_cli,
+        "save_processed_data",
+        lambda frame: tmp_path / "processed" / "amazon_sales_clean.csv",
     )
     monkeypatch.setattr(
         pipeline_cli,
         "export_quality_gate_report",
         lambda frame, settings: tmp_path / "metrics" / "quality_gates.json",
     )
-    monkeypatch.setattr(pipeline_cli, "prepare_sales_frame", lambda frame: pd.DataFrame({"order_id": [1]}))
     monkeypatch.setattr(
-        pipeline_cli, "generate_executive_insights", lambda frame: pd.DataFrame({"headline": ["x"], "insight": ["y"]})
+        pipeline_cli, "prepare_sales_frame", lambda frame: pd.DataFrame({"order_id": [1]})
+    )
+    monkeypatch.setattr(
+        pipeline_cli,
+        "generate_executive_insights",
+        lambda frame: pd.DataFrame({"headline": ["x"], "insight": ["y"]}),
     )
     monkeypatch.setattr(
         pipeline_cli,
@@ -492,10 +511,14 @@ def test_pipeline_cli_can_fail_on_kpi_regression(tmp_path, monkeypatch) -> None:
     )
     monkeypatch.setattr(pipeline_cli, "build_storytelling_visuals", lambda frame: None)
     monkeypatch.setattr(
-        pipeline_cli, "build_actionable_recommendations", lambda frame: pd.DataFrame({"owner": ["x"]})
+        pipeline_cli,
+        "build_actionable_recommendations",
+        lambda frame: pd.DataFrame({"owner": ["x"]}),
     )
     monkeypatch.setattr(
-        pipeline_cli, "build_executive_tables", lambda frame: {"category_performance": pd.DataFrame({"x": [1]})}
+        pipeline_cli,
+        "build_executive_tables",
+        lambda frame: {"category_performance": pd.DataFrame({"x": [1]})},
     )
     monkeypatch.setattr(
         pipeline_cli,
@@ -518,7 +541,9 @@ def test_pipeline_cli_can_fail_on_kpi_regression(tmp_path, monkeypatch) -> None:
         "save_product_metrics",
         lambda payload: tmp_path / "metrics" / "product_metrics.json",
     )
-    monkeypatch.setattr(pipeline_cli, "load_metrics_baseline", lambda settings: {"total_revenue": 100.0})
+    monkeypatch.setattr(
+        pipeline_cli, "load_metrics_baseline", lambda settings: {"total_revenue": 100.0}
+    )
     monkeypatch.setattr(
         pipeline_cli,
         "build_metrics_regression_report",
@@ -533,9 +558,13 @@ def test_pipeline_cli_can_fail_on_kpi_regression(tmp_path, monkeypatch) -> None:
         lambda report, settings: tmp_path / "metrics" / "product_metrics_regression.json",
     )
     monkeypatch.setattr(
-        pipeline_cli, "save_metrics_baseline", lambda payload, settings: tmp_path / "metrics" / "product_metrics_baseline.json"
+        pipeline_cli,
+        "save_metrics_baseline",
+        lambda payload, settings: tmp_path / "metrics" / "product_metrics_baseline.json",
     )
-    monkeypatch.setattr(pipeline_cli, "detect_discount_spikes", lambda frame: pd.DataFrame({"severity": []}))
+    monkeypatch.setattr(
+        pipeline_cli, "detect_discount_spikes", lambda frame: pd.DataFrame({"severity": []})
+    )
     monkeypatch.setattr(
         pipeline_cli,
         "export_discount_spike_alerts",

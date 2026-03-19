@@ -85,7 +85,8 @@ def readiness() -> dict[str, Any]:
     checks = {
         "processed_dataset_available": _processed_dataset_path().exists(),
         "warehouse_query_layer_available": (
-            settings.warehouse_db_path.exists() or any(settings.gold_data_dir.glob("*_commercial_mart.csv"))
+            settings.warehouse_db_path.exists()
+            or any(settings.gold_data_dir.glob("*_commercial_mart.csv"))
         ),
     }
     is_ready = all(checks.values())

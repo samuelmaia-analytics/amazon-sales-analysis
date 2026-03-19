@@ -100,7 +100,8 @@ def load_metrics_baseline(settings: Settings | None = None) -> dict[str, Any] | 
 
 
 def save_metrics_baseline(
-    metrics: Mapping[str, float | int | str | list[dict[str, str]]], settings: Settings | None = None
+    metrics: Mapping[str, float | int | str | list[dict[str, str]]],
+    settings: Settings | None = None,
 ) -> Path:
     return write_json_artifact(dict(metrics), metrics_baseline_path(settings))
 
@@ -112,8 +113,10 @@ def build_metrics_regression_report(
     baseline_metrics: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     resolved_settings = settings or get_settings()
-    resolved_baseline = baseline_metrics if baseline_metrics is not None else load_metrics_baseline(
-        resolved_settings
+    resolved_baseline = (
+        baseline_metrics
+        if baseline_metrics is not None
+        else load_metrics_baseline(resolved_settings)
     )
 
     if resolved_baseline is None:
@@ -134,9 +137,7 @@ def build_metrics_regression_report(
         delta = current_value - baseline_value
         delta_pct = 0.0 if baseline_value == 0 else delta / baseline_value
         status = (
-            "fail"
-            if abs(delta_pct) > resolved_settings.kpi_regression_tolerance_pct
-            else "pass"
+            "fail" if abs(delta_pct) > resolved_settings.kpi_regression_tolerance_pct else "pass"
         )
         if status == "fail":
             failed_metrics.append(metric_name)
