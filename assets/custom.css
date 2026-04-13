@@ -35,8 +35,8 @@
     max-width: none;
     width: 100%;
     padding-top: 1.1rem;
-    padding-left: clamp(1rem, 3vw, 2rem);
-    padding-right: clamp(1rem, 3vw, 2rem);
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
 }
 
 [data-testid="stHorizontalBlock"] {
@@ -172,32 +172,22 @@
     background: #115e59 !important;
 }
 
-@media (min-width: 1201px) {
-    [data-testid="stSidebar"] {
-        width: 260px !important;
-        min-width: 260px !important;
-    }
-}
-
 [data-testid="stSidebar"] h3 {
     margin-top: 0.2rem;
     color: var(--ink);
 }
 
-@media (max-width: 1200px) {
-    [data-testid="stAppViewContainer"] .main .block-container,
-    [data-testid="stAppViewContainer"] .main .stMainBlockContainer {
-        padding-left: 1rem;
-        padding-right: 1rem;
-    }
+[data-testid="stSidebar"] {
+    width: 260px !important;
+    min-width: 260px !important;
 }
 
-@media (min-width: 1400px) {
+@media (max-width: 900px) {
     [data-testid="stAppViewContainer"] .main .block-container,
     [data-testid="stAppViewContainer"] .main .stMainBlockContainer,
     [data-testid="stMainBlockContainer"],
     [data-testid="stAppViewBlockContainer"] {
-        padding-left: 1.25rem;
-        padding-right: 1.25rem;
+        padding-left: 0.9rem;
+        padding-right: 0.9rem;
     }
 }
