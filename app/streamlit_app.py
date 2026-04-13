@@ -96,6 +96,51 @@ def _as_mapping(value: object) -> dict[str, Any]:
     return cast(dict[str, Any], value if isinstance(value, dict) else {})
 
 
+def _build_local_fallback_operational_view(
+    df: pd.DataFrame, settings: Any, quality_table: pd.DataFrame
+) -> tuple[dict[str, object], list[dict[str, object]]]:
+    quality_status = "pass" if (quality_table["status"] == "pass").all() else "fail"
+    warehouse_available = bool(
+        settings.warehouse_db_path.exists() or any(settings.gold_data_dir.glob("*_commercial_mart.csv"))
+    )
+
+    run_started_at = ""
+    if DATASET_PATH.exists():
+        run_started_at = pd.Timestamp(DATASET_PATH.stat().st_mtime, unit="s", tz="UTC").isoformat()
+
+    total_orders = int(df["order_id"].nunique()) if "order_id" in df else int(len(df))
+    total_revenue = float(df["total_revenue"].sum()) if "total_revenue" in df else 0.0
+    avg_ticket = total_revenue / total_orders if total_orders else 0.0
+
+    run_record: dict[str, object] = {
+        "run_id": "local-snapshot",
+        "started_at_utc": run_started_at,
+        "completed_at_utc": run_started_at,
+        "duration_seconds": 0.0,
+        "status": "succeeded",
+        "pipeline_version": "local",
+        "raw_rows": int(len(df)),
+        "clean_rows": int(len(df)),
+        "alerts": 0,
+        "total_revenue": total_revenue,
+        "avg_ticket": avg_ticket,
+    }
+    summary: dict[str, object] = {
+        "run_id": "local-snapshot",
+        "started_at_utc": run_started_at,
+        "pipeline_version": "local",
+        "overall_status": "healthy" if quality_status == "pass" else "attention",
+        "quality_gates": {"status": quality_status, "source": "runtime"},
+        "metrics_regression": {"status": "not_available", "source": "runtime"},
+        "warehouse_validation": {
+            "status": "pass" if warehouse_available else "missing",
+            "source": "runtime",
+        },
+        "run_status": {"status": "succeeded", "source": "runtime"},
+    }
+    return summary, [run_record]
+
+
 def _apply_exec_chart_style(fig: go.Figure, *, yaxis_title: str = "", xaxis_title: str = "") -> go.Figure:
     fig.update_layout(
         template="plotly_white",
@@ -387,14 +432,18 @@ def _operations_tab(df: pd.DataFrame) -> None:
     run_comparison = load_run_comparison()
     warehouse_metadata = load_warehouse_metadata()
     settings = get_settings()
+    quality_table = summarize_quality_gates(df)
+    using_local_fallback = operational_summary is None and not run_history
+    if using_local_fallback:
+        operational_summary, run_history = _build_local_fallback_operational_view(
+            df, settings, quality_table
+        )
 
     st.subheader("Saúde Operacional do Produto de Dados")
-    if operational_summary is None:
-        st.warning("Nenhum run operacional encontrado.")
-        st.caption(
-            "Execute: amazon-sales-pipeline --retention-runs 60 para gerar histórico operacional."
-        )
-    else:
+    if using_local_fallback:
+        st.caption("Modo local: sem histórico em reports/runs, exibindo snapshot operacional.")
+
+    if operational_summary is not None:
         run_status = _as_mapping(operational_summary.get("run_status", {}))
         quality = _as_mapping(operational_summary.get("quality_gates", {}))
         regression = _as_mapping(operational_summary.get("metrics_regression", {}))
@@ -420,30 +469,18 @@ def _operations_tab(df: pd.DataFrame) -> None:
     )
 
     run_cols = st.columns(2)
-    with run_cols[0]:
-        if latest_run is None:
-            st.info("Último run: indisponível")
-        else:
-            st.markdown(
-                
-                    "**Último run**  \n"
-                    f"run_id: `{latest_run.get('run_id', '')}`  \n"
-                    f"status: `{latest_run.get('status', '')}`  \n"
-                    f"início: `{latest_run.get('started_at_utc', '')}`"
-                
-            )
-    with run_cols[1]:
-        if latest_successful_run is None:
-            st.warning("Último run bem-sucedido: não encontrado")
-        else:
-            st.markdown(
-                
-                    "**Último run bem-sucedido**  \n"
-                    f"run_id: `{latest_successful_run.get('run_id', '')}`  \n"
-                    f"status: `{latest_successful_run.get('status', '')}`  \n"
-                    f"início: `{latest_successful_run.get('started_at_utc', '')}`"
-                
-            )
+    latest_run_status = str(latest_run.get("status", "indisponível")) if latest_run else "indisponível"
+    latest_run_id = str(latest_run.get("run_id", "n/a")) if latest_run else "n/a"
+    latest_success_id = (
+        str(latest_successful_run.get("run_id", "n/a")) if latest_successful_run else "n/a"
+    )
+    latest_success_status = (
+        str(latest_successful_run.get("status", "indisponível"))
+        if latest_successful_run
+        else "indisponível"
+    )
+    run_cols[0].metric("Último run", latest_run_id, latest_run_status)
+    run_cols[1].metric("Último run bem-sucedido", latest_success_id, latest_success_status)
 
     with left:
         st.markdown("**Histórico recente de runs**")
@@ -460,7 +497,14 @@ def _operations_tab(df: pd.DataFrame) -> None:
     with right:
         st.markdown("**Drift dos últimos runs**")
         if run_comparison is None:
-            st.info("São necessários ao menos dois runs para comparação.")
+            st.caption(
+                "Drift indisponível: são necessários ao menos dois runs materializados."
+            )
+            st.dataframe(
+                pd.DataFrame(columns=["metric", "latest", "previous", "delta", "delta_ratio", "severity"]),
+                width="stretch",
+                hide_index=True,
+            )
         else:
             st.metric("Severidade geral", str(run_comparison.get("overall_severity", "unknown")))
             drift_df = (
@@ -473,7 +517,7 @@ def _operations_tab(df: pd.DataFrame) -> None:
             st.dataframe(drift_df, width="stretch", hide_index=True)
 
     st.markdown("**Validação de qualidade sobre recorte atual**")
-    st.dataframe(summarize_quality_gates(df), width="stretch", hide_index=True)
+    st.dataframe(quality_table, width="stretch", hide_index=True)
 
     st.markdown("**Metadados de acesso analítico**")
     metadata_table = pd.DataFrame(
