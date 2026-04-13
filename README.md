@@ -121,6 +121,11 @@ PYTHONPATH=src python -m amazon_sales_analysis.cli.warehouse --show-operational-
 - `GET /health/ready`
 - `GET /metrics/summary`
 - `GET /metrics/opportunities`
+- `GET /metrics/monthly-trend`
+- `GET /insights/executive`
+- `GET /recommendations/actionable`
+- `GET /quality/gates`
+- `GET /kpis/catalog`
 - `GET /alerts/discount-spikes`
 - `GET /warehouse/category-revenue`
 - `GET /pipeline/runs`
@@ -220,4 +225,3 @@ CI runs the same gates on Python 3.12 and 3.13.
 ## License
 
 Apache License 2.0. See [LICENSE](LICENSE).
-

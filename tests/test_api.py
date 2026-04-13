@@ -173,6 +173,81 @@ def test_pipeline_compare_latest_returns_404_without_enough_runs(monkeypatch) ->
     assert response.status_code == 404
 
 
+def test_metrics_monthly_trend_endpoint_returns_rows(tmp_path) -> None:
+    dataset_path = tmp_path / "amazon_sales_clean.csv"
+    frame = pd.DataFrame(
+        {
+            "order_id": [1, 2, 3],
+            "order_date": ["2024-01-01", "2024-01-20", "2024-02-05"],
+            "product_id": [10, 11, 12],
+            "product_category": ["Beauty", "Electronics", "Beauty"],
+            "price": [100.0, 200.0, 150.0],
+            "discount_percent": [10.0, 20.0, 10.0],
+            "quantity_sold": [1, 1, 1],
+            "customer_region": ["North", "South", "East"],
+            "payment_method": ["Card", "Pix", "Card"],
+            "rating": [4.8, 4.6, 4.7],
+            "review_count": [10, 20, 15],
+            "discounted_price": [90.0, 160.0, 135.0],
+            "total_revenue": [90.0, 160.0, 135.0],
+        }
+    )
+    frame.to_csv(dataset_path, index=False)
+    api.DATASET_PATH = dataset_path
+    client = TestClient(api.app)
+
+    response = client.get("/metrics/monthly-trend")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert len(payload) == 2
+    assert payload[0]["month_start"] == "2024-01-01"
+    assert payload[1]["month_start"] == "2024-02-01"
+
+
+def test_actionable_recommendations_endpoint_uses_engine(monkeypatch) -> None:
+    monkeypatch.setattr(
+        api,
+        "build_actionable_recommendations",
+        lambda frame: pd.DataFrame(
+            [{"product_category": "Beauty", "expected_impact_usd": 123.0, "priority": "high"}]
+        ),
+    )
+    monkeypatch.setattr(
+        api,
+        "_load_processed_data",
+        lambda: pd.DataFrame({"total_revenue": [100.0], "order_id": [1]}),
+    )
+    client = TestClient(api.app)
+
+    response = client.get("/recommendations/actionable")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload[0]["product_category"] == "Beauty"
+
+
+def test_quality_gates_endpoint_returns_summary(monkeypatch) -> None:
+    monkeypatch.setattr(
+        api,
+        "summarize_quality_gates",
+        lambda frame: pd.DataFrame([{"check": "row_count", "status": "pass", "value": 10}]),
+    )
+    monkeypatch.setattr(
+        api,
+        "_load_processed_data",
+        lambda: pd.DataFrame({"total_revenue": [100.0], "order_id": [1]}),
+    )
+    client = TestClient(api.app)
+
+    response = client.get("/quality/gates")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload[0]["check"] == "row_count"
+    assert payload[0]["status"] == "pass"
+
+
 def test_operations_latest_returns_summary(monkeypatch) -> None:
     monkeypatch.setattr(
         api,

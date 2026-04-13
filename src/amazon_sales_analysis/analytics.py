@@ -18,3 +18,20 @@ def summarize_kpis(df: pd.DataFrame) -> dict[str, float]:
         "avg_rating": float(lookup.get("avg_rating", 0.0)),
         "net_revenue_retained": float(lookup.get("net_revenue_retained", 0.0)),
     }
+
+
+def summarize_monthly_performance(df: pd.DataFrame) -> pd.DataFrame:
+    prepared = prepare_sales_frame(df)
+    monthly = (
+        prepared.groupby("month_start", as_index=False)
+        .agg(
+            total_revenue=("total_revenue", "sum"),
+            gross_revenue=("gross_revenue", "sum"),
+            orders=("order_id", "nunique"),
+            discount_value=("discount_value", "sum"),
+        )
+        .sort_values("month_start")
+    )
+    monthly["avg_order_value"] = monthly["total_revenue"] / monthly["orders"].replace(0, pd.NA)
+    monthly["nrr"] = monthly["total_revenue"] / monthly["gross_revenue"].replace(0, pd.NA)
+    return monthly.fillna(0.0)

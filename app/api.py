@@ -8,9 +8,16 @@ import pandas as pd
 from fastapi import FastAPI, HTTPException
 
 from amazon_sales_analysis import __version__
-from amazon_sales_analysis.analytics import add_derived_metrics, summarize_kpis
+from amazon_sales_analysis.analytics import (
+    add_derived_metrics,
+    summarize_kpis,
+    summarize_monthly_performance,
+)
 from amazon_sales_analysis.anomaly_detection import detect_discount_spikes
+from amazon_sales_analysis.business_metrics import build_kpi_catalog
 from amazon_sales_analysis.config import get_settings
+from amazon_sales_analysis.decision_engine import build_actionable_recommendations
+from amazon_sales_analysis.insights import generate_executive_insights
 from amazon_sales_analysis.modeling import rank_discount_opportunities
 from amazon_sales_analysis.operations import latest_operational_summary
 from amazon_sales_analysis.serving.run_history import compare_latest_runs, summarize_run_history
@@ -19,6 +26,7 @@ from amazon_sales_analysis.serving.warehouse_service import (
     warehouse_query_metadata,
 )
 from amazon_sales_analysis.transformations.data_preprocessing import read_sales_dataset
+from amazon_sales_analysis.validation.quality import summarize_quality_gates
 
 DATASET_PATH: Path | None = None
 ALERTS_PATH: Path | None = None
@@ -123,6 +131,41 @@ def category_opportunities() -> list[dict[str, Any]]:
     frame = _load_processed_data()
     opportunities = rank_discount_opportunities(frame)
     return cast(list[dict[str, Any]], opportunities.to_dict(orient="records"))
+
+
+@app.get("/metrics/monthly-trend")
+def metrics_monthly_trend() -> list[dict[str, Any]]:
+    frame = _load_processed_data()
+    trend = summarize_monthly_performance(frame).copy()
+    trend["month_start"] = pd.to_datetime(trend["month_start"]).dt.date.astype(str)
+    return cast(list[dict[str, Any]], trend.to_dict(orient="records"))
+
+
+@app.get("/insights/executive")
+def executive_insights() -> list[dict[str, Any]]:
+    frame = _load_processed_data()
+    insights = generate_executive_insights(frame)
+    return cast(list[dict[str, Any]], insights.to_dict(orient="records"))
+
+
+@app.get("/recommendations/actionable")
+def actionable_recommendations() -> list[dict[str, Any]]:
+    frame = _load_processed_data()
+    recommendations = build_actionable_recommendations(frame)
+    return cast(list[dict[str, Any]], recommendations.to_dict(orient="records"))
+
+
+@app.get("/quality/gates")
+def quality_gates() -> list[dict[str, Any]]:
+    frame = _load_processed_data()
+    quality = summarize_quality_gates(frame)
+    return cast(list[dict[str, Any]], quality.to_dict(orient="records"))
+
+
+@app.get("/kpis/catalog")
+def kpis_catalog() -> list[dict[str, Any]]:
+    catalog = build_kpi_catalog()
+    return cast(list[dict[str, Any]], catalog.to_dict(orient="records"))
 
 
 @app.get("/alerts/discount-spikes")
