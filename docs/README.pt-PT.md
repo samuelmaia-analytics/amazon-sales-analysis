@@ -69,6 +69,20 @@ Pacotes de domínio:
 - `pipelines/`
   utilitários partilhados de execução para manifestos, estado e persistência
 
+## Snapshot Mermaid
+
+```mermaid
+flowchart LR
+    A[Raw] --> B[Validacao]
+    B --> C[Bronze]
+    C --> D[Limpeza + Quality Gates]
+    D --> E[Silver]
+    E --> F[Gold + Warehouse]
+    F --> G[Metricas + Regressao]
+    G --> H[Manifesto + Run Status]
+    H --> I[Snapshots Latest]
+```
+
 ## Superfícies de Execução
 
 CLI:
@@ -77,6 +91,7 @@ CLI:
 amazon-sales-pipeline
 amazon-sales-pipeline --force-download
 amazon-sales-pipeline --fail-on-kpi-regression
+amazon-sales-pipeline --retention-runs 60
 amazon-sales-alerts
 amazon-sales-scenario
 amazon-sales-warehouse --show-operational-summary
@@ -101,11 +116,36 @@ Dashboard:
 Garantias já implementadas:
 
 - layout determinístico de artefactos por `run_id`
+- artefactos por execução persistidos em `reports/runs/<run_id>/`
+- snapshots analíticos `latest` estáveis para consumidores de API/CLI
+- retenção configurável de execuções (`--retention-runs`)
 - reutilização controlada do ficheiro bruto para reprocessamento
 - escrita atómica de CSVs e JSONs críticos
 - controlos de qualidade sobre o dataset curado
 - comparação de regressão de KPIs contra uma linha de base persistida
 - materialização local do warehouse quando DuckDB está disponível
+
+## Governança e Boas Práticas LGPD
+
+- por omissão, o pipeline persiste saídas operacionais e analíticas agregadas
+- configuração por ambiente evita credenciais em ficheiros versionados
+- contratos, manifestos e estado de execução reforçam auditoria e rastreabilidade
+- os testes usam dados sintéticos para evitar exposição de dados sensíveis de produção
+
+## Ciclo de Vida dos Artefactos
+
+- cada execução gera artefactos imutáveis em `reports/runs/<run_id>/`
+- snapshots `latest` são publicados em `reports/metrics/` e `reports/tables/`
+- a retenção é configurável com `amazon-sales-pipeline --retention-runs <N>`
+- manifestos registam hashes e caminhos para replay e análise de incidentes
+
+## Quickstart e Operação
+
+```bash
+python -m pip install -e .[dev]
+amazon-sales-pipeline --retention-runs 60
+amazon-sales-warehouse --show-operational-summary
+```
 
 ## Decisões de Engenharia
 
@@ -124,10 +164,14 @@ make build-check
 
 A validação atual inclui:
 
+- `black --check .`
+- `isort --check-only .`
 - `ruff check .`
 - `mypy src tests app alerts scripts`
 - `pytest -q`
 - `python -m build --sdist --wheel`
+
+Os mesmos gates de qualidade correm no GitHub Actions CI para Python 3.12 e 3.13.
 
 ## Trade-offs
 

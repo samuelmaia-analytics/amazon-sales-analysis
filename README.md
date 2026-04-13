@@ -7,6 +7,7 @@ Production-oriented analytics platform for marketplace commercial performance. T
 - International: [README.md](README.md)
 - PT-BR: [docs/README.pt-BR.md](docs/README.pt-BR.md)
 - PT-PT: [docs/README.pt-PT.md](docs/README.pt-PT.md)
+- Structure guide: [docs/REPOSITORY_STRUCTURE.md](docs/REPOSITORY_STRUCTURE.md)
 
 ## Business Value
 
@@ -139,6 +140,49 @@ Placement rules and ownership model: [docs/REPOSITORY_STRUCTURE.md](/C:/Users/sa
 9. Persist manifests, run status, metrics, and operational artifacts under `reports/runs/<run_id>/`.
 10. Serve curated data through FastAPI, Streamlit, and CLI entry points.
 
+## Mermaid Diagrams
+
+### End-to-End Pipeline
+
+```mermaid
+flowchart LR
+    A[Raw Ingestion\nkagglehub or local reuse] --> B[Raw Contract + Schema Validation]
+    B --> C[Bronze Snapshot\nreports by run_id]
+    C --> D[Cleaning + Dedup + Normalization]
+    D --> E[Quality Gates]
+    E --> F[Silver Snapshot]
+    F --> G[Feature Engineering + Sales Model]
+    G --> H[Gold Snapshot + DuckDB Materialization]
+    H --> I[KPI Package + Regression]
+    I --> J[Manifest + Run Status + Operational Summary]
+    J --> K[Latest Snapshots\nAPI / CLI / Streamlit]
+```
+
+### Operational Execution Sequence
+
+```mermaid
+sequenceDiagram
+    participant U as Operator
+    participant C as CLI Pipeline
+    participant R as Runtime Context
+    participant D as Data Layers
+    participant V as Validation & Quality
+    participant O as Observability
+    participant S as Serving Layer
+
+    U->>C: amazon-sales-pipeline --retention-runs N
+    C->>R: create run_id + artifact directories
+    C->>D: ingest raw + write bronze
+    C->>V: enforce contract/schema + quality gates
+    C->>D: write silver + gold + processed
+    C->>S: materialize warehouse + export tables
+    C->>O: build metrics + compare KPI baseline
+    C->>R: write manifest + run_status + summary
+    C->>R: publish latest snapshots
+    C->>R: prune old runs by retention policy
+    C-->>U: success / terminated / failed
+```
+
 ## Package Taxonomy
 
 - `ingestion/`
@@ -162,6 +206,7 @@ Placement rules and ownership model: [docs/REPOSITORY_STRUCTURE.md](/C:/Users/sa
 amazon-sales-pipeline
 amazon-sales-pipeline --force-download
 amazon-sales-pipeline --fail-on-kpi-regression
+amazon-sales-pipeline --retention-runs 60
 amazon-sales-alerts
 amazon-sales-scenario
 amazon-sales-warehouse --export-category-revenue
@@ -204,11 +249,48 @@ Configured through [`src/amazon_sales_analysis/config.py`](/C:/Users/samue/Pycha
 Operational guarantees already implemented:
 
 - deterministic artifact layout by `run_id`
+- run-scoped artifacts under `reports/runs/<run_id>/` with immutable snapshots
+- stable `latest` analytical snapshots for API and CLI consumption
+- configurable retention for pipeline run artifacts (`--retention-runs`)
 - explicit raw refresh control
 - manifest and run-status persistence
 - quality gates over the curated dataset
 - KPI regression checks against a persisted baseline
 - optional warehouse materialization with validation output
+
+## Operational Playbook
+
+Run full pipeline with default retention:
+
+```bash
+amazon-sales-pipeline
+```
+
+Force download and strict KPI regression:
+
+```bash
+amazon-sales-pipeline --force-download --fail-on-kpi-regression
+```
+
+Retain only the most recent pipeline runs:
+
+```bash
+amazon-sales-pipeline --retention-runs 60
+```
+
+Daily operational checks:
+
+- `amazon-sales-warehouse --show-run-history`
+- `amazon-sales-warehouse --compare-latest-runs`
+- `amazon-sales-warehouse --show-operational-summary`
+
+## Governance and LGPD
+
+- The pipeline keeps only operational and aggregated analytical outputs required for commercial decisions.
+- Repository examples and tests use synthetic fixtures; no personal identifiers are committed as source code assets.
+- Environment configuration is externalized via `.env`; credentials are not stored in versioned files.
+- Contract, quality, and run manifest artifacts make lineage and accountability explicit for audits.
+- Retention and deletion policies are intentionally local and explicit so they can be adapted to legal requirements in each deployment context.
 
 ## Technology Stack
 
@@ -253,6 +335,14 @@ make quality
 make test
 make build-check
 ```
+
+CI workflow (`.github/workflows/ci.yml`) executes the same quality gates on Python 3.12 and 3.13:
+
+- formatting checks
+- linting
+- static typing
+- unit tests with coverage artifacts
+- package build validation
 
 Validation stack:
 
@@ -314,3 +404,7 @@ The root package still exposes compatibility modules such as `data_ingestion.py`
 
 - GitHub: https://github.com/samuelmaia-analytics
 - LinkedIn: https://linkedin.com/in/samuelmaia-analytics
+
+## License
+
+This project is licensed under the Apache License 2.0. See [LICENSE](LICENSE).

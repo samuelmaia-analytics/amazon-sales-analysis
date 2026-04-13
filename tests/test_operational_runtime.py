@@ -279,6 +279,11 @@ def test_pipeline_cli_main_orchestrates_pipeline_outputs(tmp_path, monkeypatch) 
     )
     logged_messages: list[str] = []
 
+    def _write_text_artifact(path: Path, content: str) -> Path:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content, encoding="utf-8")
+        return path
+
     class FakeLogger:
         def info(self, message: str, *args) -> None:
             logged_messages.append(message % args if args else message)
@@ -317,7 +322,9 @@ def test_pipeline_cli_main_orchestrates_pipeline_outputs(tmp_path, monkeypatch) 
     monkeypatch.setattr(pipeline_cli, "enforce_raw_contract", lambda frame: None)
     monkeypatch.setattr(pipeline_cli, "validate_raw_sales_data", lambda frame: frame)
     monkeypatch.setattr(
-        pipeline_cli, "export_contract_snapshot", lambda contract_version: contract_path
+        pipeline_cli,
+        "export_contract_snapshot",
+        lambda contract_version, output_path=None: _write_text_artifact(contract_path, "{}"),
     )
     monkeypatch.setattr(pipeline_cli, "clean_sales_data", lambda frame: clean_df)
     monkeypatch.setattr(pipeline_cli, "enforce_clean_quality_gates", lambda frame: None)
@@ -325,7 +332,9 @@ def test_pipeline_cli_main_orchestrates_pipeline_outputs(tmp_path, monkeypatch) 
     monkeypatch.setattr(
         pipeline_cli,
         "export_quality_gate_report",
-        lambda frame, settings: metrics_path.parent / "quality_gates.json",
+        lambda frame, settings, output_path=None: _write_text_artifact(
+            metrics_path.parent / "quality_gates.json", '{"status":"pass"}'
+        ),
     )
     monkeypatch.setattr(pipeline_cli, "prepare_sales_frame", lambda frame: featured_df)
     monkeypatch.setattr(pipeline_cli, "generate_executive_insights", lambda frame: insights)
@@ -355,7 +364,11 @@ def test_pipeline_cli_main_orchestrates_pipeline_outputs(tmp_path, monkeypatch) 
             "pipeline_version": pipeline_version,
         },
     )
-    monkeypatch.setattr(pipeline_cli, "save_product_metrics", lambda payload: metrics_path)
+    monkeypatch.setattr(
+        pipeline_cli,
+        "save_product_metrics",
+        lambda payload, output_path=None: _write_text_artifact(metrics_path, '{"status":"ok"}'),
+    )
     monkeypatch.setattr(pipeline_cli, "load_metrics_baseline", lambda settings: None)
     monkeypatch.setattr(
         pipeline_cli,
@@ -368,12 +381,17 @@ def test_pipeline_cli_main_orchestrates_pipeline_outputs(tmp_path, monkeypatch) 
     monkeypatch.setattr(
         pipeline_cli,
         "save_metrics_regression_report",
-        lambda report, settings: metrics_path.parent / "product_metrics_regression.json",
+        lambda report, settings, output_path=None: _write_text_artifact(
+            metrics_path.parent / "product_metrics_regression.json",
+            '{"status":"baseline_initialized","failed_metrics":[]}',
+        ),
     )
     monkeypatch.setattr(
         pipeline_cli,
         "save_metrics_baseline",
-        lambda payload, settings: metrics_path.parent / "product_metrics_baseline.json",
+        lambda payload, settings: _write_text_artifact(
+            metrics_path.parent / "product_metrics_baseline.json", '{"status":"initialized"}'
+        ),
     )
     monkeypatch.setattr(
         pipeline_cli,
@@ -381,7 +399,11 @@ def test_pipeline_cli_main_orchestrates_pipeline_outputs(tmp_path, monkeypatch) 
         lambda payload, output_path, settings: output_path,
     )
     monkeypatch.setattr(pipeline_cli, "detect_discount_spikes", lambda frame: alerts_df)
-    monkeypatch.setattr(pipeline_cli, "export_discount_spike_alerts", lambda frame: alerts_path)
+    monkeypatch.setattr(
+        pipeline_cli,
+        "export_discount_spike_alerts",
+        lambda frame, output_path=None: _write_text_artifact(alerts_path, "product_category\nBeauty\n"),
+    )
 
     def fake_write_json_artifact(payload: dict[str, object], target: Path) -> Path:
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -448,6 +470,11 @@ def test_pipeline_cli_can_fail_on_kpi_regression(tmp_path, monkeypatch) -> None:
 
     fake_logger = FakeLogger()
 
+    def _write_text_artifact(path: Path, content: str) -> Path:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content, encoding="utf-8")
+        return path
+
     monkeypatch.setattr(pipeline_cli, "get_settings", lambda: settings)
     monkeypatch.setattr(
         pipeline_cli,
@@ -480,7 +507,9 @@ def test_pipeline_cli_can_fail_on_kpi_regression(tmp_path, monkeypatch) -> None:
     monkeypatch.setattr(
         pipeline_cli,
         "export_contract_snapshot",
-        lambda contract_version: tmp_path / "contracts" / "snapshot.json",
+        lambda contract_version, output_path=None: _write_text_artifact(
+            tmp_path / "contracts" / "snapshot.json", "{}"
+        ),
     )
     monkeypatch.setattr(
         pipeline_cli, "clean_sales_data", lambda frame: pd.DataFrame({"order_id": [1]})
@@ -494,7 +523,9 @@ def test_pipeline_cli_can_fail_on_kpi_regression(tmp_path, monkeypatch) -> None:
     monkeypatch.setattr(
         pipeline_cli,
         "export_quality_gate_report",
-        lambda frame, settings: tmp_path / "metrics" / "quality_gates.json",
+        lambda frame, settings, output_path=None: _write_text_artifact(
+            tmp_path / "metrics" / "quality_gates.json", '{"status":"pass"}'
+        ),
     )
     monkeypatch.setattr(
         pipeline_cli, "prepare_sales_frame", lambda frame: pd.DataFrame({"order_id": [1]})
@@ -539,7 +570,9 @@ def test_pipeline_cli_can_fail_on_kpi_regression(tmp_path, monkeypatch) -> None:
     monkeypatch.setattr(
         pipeline_cli,
         "save_product_metrics",
-        lambda payload: tmp_path / "metrics" / "product_metrics.json",
+        lambda payload, output_path=None: _write_text_artifact(
+            tmp_path / "metrics" / "product_metrics.json", '{"status":"ok"}'
+        ),
     )
     monkeypatch.setattr(
         pipeline_cli, "load_metrics_baseline", lambda settings: {"total_revenue": 100.0}
@@ -555,12 +588,17 @@ def test_pipeline_cli_can_fail_on_kpi_regression(tmp_path, monkeypatch) -> None:
     monkeypatch.setattr(
         pipeline_cli,
         "save_metrics_regression_report",
-        lambda report, settings: tmp_path / "metrics" / "product_metrics_regression.json",
+        lambda report, settings, output_path=None: _write_text_artifact(
+            tmp_path / "metrics" / "product_metrics_regression.json",
+            '{"status":"fail","failed_metrics":["total_revenue"]}',
+        ),
     )
     monkeypatch.setattr(
         pipeline_cli,
         "save_metrics_baseline",
-        lambda payload, settings: tmp_path / "metrics" / "product_metrics_baseline.json",
+        lambda payload, settings: _write_text_artifact(
+            tmp_path / "metrics" / "product_metrics_baseline.json", '{"status":"initialized"}'
+        ),
     )
     monkeypatch.setattr(
         pipeline_cli, "detect_discount_spikes", lambda frame: pd.DataFrame({"severity": []})
@@ -568,7 +606,9 @@ def test_pipeline_cli_can_fail_on_kpi_regression(tmp_path, monkeypatch) -> None:
     monkeypatch.setattr(
         pipeline_cli,
         "export_discount_spike_alerts",
-        lambda frame: tmp_path / "tables" / "discount_spike_alerts.csv",
+        lambda frame, output_path=None: _write_text_artifact(
+            tmp_path / "tables" / "discount_spike_alerts.csv", "severity\nhigh\n"
+        ),
     )
 
     with pytest.raises(SystemExit, match="total_revenue"):

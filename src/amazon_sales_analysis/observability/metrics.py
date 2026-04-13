@@ -159,6 +159,9 @@ def build_metrics_regression_report(
 
 
 def save_metrics_regression_report(
-    report: dict[str, Any], settings: Settings | None = None
+    report: dict[str, Any],
+    settings: Settings | None = None,
+    output_path: Path | None = None,
 ) -> Path:
-    return write_json_artifact(report, metrics_regression_report_path(settings))
+    target = output_path or metrics_regression_report_path(settings)
+    return write_json_artifact(report, target)

@@ -31,6 +31,8 @@ from amazon_sales_analysis.observability.metrics import (
 from amazon_sales_analysis.pipelines.runtime import (
     PipelineRunContext,
     profile_dataframe,
+    prune_pipeline_runs,
+    publish_latest_artifact,
     write_dataframe_artifact,
     write_json_artifact,
 )
@@ -81,10 +83,21 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Exit with error when KPI regression exceeds the configured tolerance.",
     )
+    parser.add_argument(
+        "--retention-runs",
+        type=int,
+        default=30,
+        help="How many most recent pipeline runs to retain under reports/runs.",
+    )
     return parser
 
 
-def run(*, force_download: bool = False, fail_on_kpi_regression: bool = False) -> None:
+def run(
+    *,
+    force_download: bool = False,
+    fail_on_kpi_regression: bool = False,
+    retention_runs: int = 30,
+) -> None:
     settings = get_settings()
     run_context = PipelineRunContext.create(settings)
     configure_logging(run_id=run_context.run_id)
@@ -96,6 +109,12 @@ def run(*, force_download: bool = False, fail_on_kpi_regression: bool = False) -
 
     try:
         ensure_directories(settings)
+        run_tables_dir = run_context.artifact_dir / "tables"
+        run_metrics_dir = run_context.artifact_dir / "metrics"
+        run_contracts_dir = run_context.artifact_dir / "contracts"
+        run_tables_dir.mkdir(parents=True, exist_ok=True)
+        run_metrics_dir.mkdir(parents=True, exist_ok=True)
+        run_contracts_dir.mkdir(parents=True, exist_ok=True)
 
         logger.info("[1/8] Ensuring source dataset availability")
         download_amazon_sales_dataset(settings=settings, force_download=force_download)
@@ -105,7 +124,11 @@ def run(*, force_download: bool = False, fail_on_kpi_regression: bool = False) -
         raw_df = load_raw_sales_data()
         enforce_raw_contract(raw_df)
         validate_raw_sales_data(raw_df)
-        contract_path = export_contract_snapshot(contract_version=CONTRACT_VERSION)
+        contract_path = export_contract_snapshot(
+            contract_version=CONTRACT_VERSION,
+            output_path=run_contracts_dir / "sales_dataset.contract.json",
+        )
+        publish_latest_artifact(contract_path, settings.contracts_dir / "sales_dataset.contract.json")
         logger.info("Data contract snapshot saved to: %s", contract_path)
 
         logger.info("[3/8] Materializing bronze layer and cleaning source data")
@@ -115,7 +138,12 @@ def run(*, force_download: bool = False, fail_on_kpi_regression: bool = False) -
         clean_df = clean_sales_data(raw_df)
         enforce_clean_quality_gates(clean_df)
         processed_path = save_processed_data(clean_df)
-        quality_report_path = export_quality_gate_report(clean_df, settings=settings)
+        quality_report_path = export_quality_gate_report(
+            clean_df,
+            settings=settings,
+            output_path=run_metrics_dir / "quality_gates.json",
+        )
+        publish_latest_artifact(quality_report_path, settings.metrics_dir / "quality_gates.json")
         silver_path = write_dataframe_artifact(
             clean_df, settings.silver_data_dir / f"{run_context.run_id}_amazon_sales_clean.csv"
         )
@@ -140,16 +168,26 @@ def run(*, force_download: bool = False, fail_on_kpi_regression: bool = False) -
         logger.info("Warehouse materialization status: %s", warehouse_result.status)
 
         settings.tables_dir.mkdir(parents=True, exist_ok=True)
+        run_table_paths: dict[str, Path] = {}
         for table_name, table_df in tables.items():
-            write_dataframe_artifact(table_df, settings.tables_dir / f"{table_name}.csv")
-        recommendations_path = write_dataframe_artifact(
-            recommendations, settings.tables_dir / "actionable_recommendations.csv"
+            run_table_path = write_dataframe_artifact(table_df, run_tables_dir / f"{table_name}.csv")
+            publish_latest_artifact(run_table_path, settings.tables_dir / f"{table_name}.csv")
+            run_table_paths[table_name] = run_table_path
+        recommendations_run_path = write_dataframe_artifact(
+            recommendations, run_tables_dir / "actionable_recommendations.csv"
         )
-        insights_path = write_dataframe_artifact(
+        publish_latest_artifact(
+            recommendations_run_path, settings.tables_dir / "actionable_recommendations.csv"
+        )
+        insights_run_path = write_dataframe_artifact(
             report.insights,
-            settings.tables_dir / "executive_insights.csv",
+            run_tables_dir / "executive_insights.csv",
         )
-        alerts_path = export_discount_spike_alerts(anomalies)
+        publish_latest_artifact(insights_run_path, settings.tables_dir / "executive_insights.csv")
+        alerts_path = export_discount_spike_alerts(
+            anomalies, output_path=run_tables_dir / "discount_spike_alerts.csv"
+        )
+        publish_latest_artifact(alerts_path, settings.tables_dir / "discount_spike_alerts.csv")
         logger.info("Executive tables saved to: %s", settings.tables_dir)
         logger.info("Discount spike alerts saved to: %s", alerts_path)
 
@@ -161,7 +199,11 @@ def run(*, force_download: bool = False, fail_on_kpi_regression: bool = False) -
             contract_version=CONTRACT_VERSION,
             pipeline_version=PIPELINE_VERSION,
         )
-        metrics_path = save_product_metrics(metrics_payload)
+        metrics_path = save_product_metrics(
+            metrics_payload,
+            output_path=run_metrics_dir / "product_metrics.json",
+        )
+        publish_latest_artifact(metrics_path, settings.metrics_dir / "product_metrics.json")
         baseline_metrics = load_metrics_baseline(settings=settings)
         metrics_regression_report = build_metrics_regression_report(
             metrics_payload,
@@ -169,7 +211,13 @@ def run(*, force_download: bool = False, fail_on_kpi_regression: bool = False) -
             baseline_metrics=baseline_metrics,
         )
         metrics_regression_path = save_metrics_regression_report(
-            metrics_regression_report, settings=settings
+            metrics_regression_report,
+            settings=settings,
+            output_path=run_metrics_dir / "product_metrics_regression.json",
+        )
+        publish_latest_artifact(
+            metrics_regression_path,
+            settings.metrics_dir / "product_metrics_regression.json",
         )
         if baseline_metrics is None:
             baseline_path = save_metrics_baseline(metrics_payload, settings=settings)
@@ -194,9 +242,9 @@ def run(*, force_download: bool = False, fail_on_kpi_regression: bool = False) -
             contract_snapshot_path=contract_path,
             metrics_path=metrics_path,
             alerts_path=alerts_path,
-            table_outputs={name: settings.tables_dir / f"{name}.csv" for name in tables},
-            recommendations_path=recommendations_path,
-            insights_path=insights_path,
+            table_outputs=run_table_paths,
+            recommendations_path=recommendations_run_path,
+            insights_path=insights_run_path,
             row_counts={
                 "raw": int(len(raw_df)),
                 "clean": int(len(clean_df)),
@@ -233,12 +281,24 @@ def run(*, force_download: bool = False, fail_on_kpi_regression: bool = False) -
             output_path=run_context.artifact_dir / "operational_summary.json",
             settings=settings,
         )
+        write_operational_summary(
+            operational_summary,
+            output_path=settings.metrics_dir / "operational_summary_latest.json",
+            settings=settings,
+        )
         write_json_artifact(
             run_context.completion_payload(status="succeeded"),
             run_context.status_path,
         )
         logger.info("Execution manifest saved to: %s", run_context.manifest_path)
         logger.info("Operational summary saved to: %s", operational_summary_path)
+
+        removed_runs = prune_pipeline_runs(settings.pipeline_runs_dir, keep_last_runs=retention_runs)
+        if removed_runs:
+            logger.info(
+                "Pipeline run retention applied. Removed %s obsolete run directories.",
+                len(removed_runs),
+            )
 
         logger.info("[8/8] Pipeline completed successfully")
     except SystemExit as exc:
@@ -262,4 +322,5 @@ def main() -> None:
     run(
         force_download=args.force_download,
         fail_on_kpi_regression=args.fail_on_kpi_regression,
+        retention_runs=args.retention_runs,
     )

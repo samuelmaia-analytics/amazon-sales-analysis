@@ -69,6 +69,20 @@ Domain packages:
 - `pipelines/`
   shared runtime helpers for manifests, status, and artifact persistence
 
+## Mermaid Snapshot
+
+```mermaid
+flowchart LR
+    A[Raw] --> B[Validation]
+    B --> C[Bronze]
+    C --> D[Clean + Quality Gates]
+    D --> E[Silver]
+    E --> F[Gold + Warehouse]
+    F --> G[Metrics + Regression]
+    G --> H[Manifest + Run Status]
+    H --> I[Latest Snapshots]
+```
+
 ## Execution Surfaces
 
 CLI:
@@ -77,6 +91,7 @@ CLI:
 amazon-sales-pipeline
 amazon-sales-pipeline --force-download
 amazon-sales-pipeline --fail-on-kpi-regression
+amazon-sales-pipeline --retention-runs 60
 amazon-sales-alerts
 amazon-sales-scenario
 amazon-sales-warehouse --show-operational-summary
@@ -101,11 +116,36 @@ Dashboard:
 Implemented guarantees:
 
 - deterministic artifact layout by `run_id`
+- run-scoped artifacts persisted under `reports/runs/<run_id>/`
+- stable `latest` analytical snapshots published for API/CLI consumers
+- configurable retention of run artifacts (`--retention-runs`)
 - local raw-file reuse for controlled reprocessing
 - atomic writes for critical CSV and JSON artifacts
 - curated dataset quality gates
 - KPI regression comparison against a stored baseline
 - local warehouse materialization when DuckDB is available
+
+## Artifact Lifecycle
+
+- each execution writes immutable artifacts under `reports/runs/<run_id>/`
+- stable `latest` snapshots are published in `reports/metrics/` and `reports/tables/`
+- retention is configurable with `amazon-sales-pipeline --retention-runs <N>`
+- run manifests keep hashes and layer output paths for audit and replay
+
+## Quickstart and Operations
+
+```bash
+python -m pip install -e .[dev]
+amazon-sales-pipeline --retention-runs 60
+amazon-sales-warehouse --show-operational-summary
+```
+
+## Governance and LGPD-like Practices
+
+- only operational and aggregated analytical outputs are persisted by default
+- environment-driven configuration keeps credentials out of versioned source files
+- contracts, manifests, and run status artifacts improve auditability and accountability
+- synthetic fixtures are used in tests to avoid exposing sensitive production data
 
 ## Engineering Decisions
 
@@ -124,10 +164,14 @@ make build-check
 
 Validation currently includes:
 
+- `black --check .`
+- `isort --check-only .`
 - `ruff check .`
 - `mypy src tests app alerts scripts`
 - `pytest -q`
 - `python -m build --sdist --wheel`
+
+The same quality gates run in GitHub Actions CI for Python 3.12 and 3.13.
 
 ## Trade-offs
 

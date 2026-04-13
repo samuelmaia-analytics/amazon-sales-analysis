@@ -110,6 +110,10 @@ def test_quality_report_is_exported(tmp_path) -> None:
         warehouse_materialization_mode="replace",
     )
 
-    output_path = export_quality_gate_report(_base_df(), settings=settings)
+    output_path = export_quality_gate_report(
+        _base_df(),
+        settings=settings,
+        output_path=tmp_path / "runs" / "run-1" / "metrics" / "quality_gates.json",
+    )
 
     assert output_path.exists()

@@ -3,7 +3,12 @@ from __future__ import annotations
 import json
 
 from amazon_sales_analysis.config import Settings, build_settings
-from amazon_sales_analysis.pipelines.runtime import PipelineRunContext, write_json_artifact
+from amazon_sales_analysis.pipelines.runtime import (
+    PipelineRunContext,
+    prune_pipeline_runs,
+    publish_latest_artifact,
+    write_json_artifact,
+)
 
 
 def test_build_settings_reads_environment_variables(monkeypatch, tmp_path) -> None:
@@ -73,3 +78,33 @@ def test_pipeline_run_context_writes_manifest(tmp_path) -> None:
     assert stored["status"] == "succeeded"
     assert stored["duration_seconds"] >= 0
     assert "sha256" in stored["outputs"]["metrics"]
+
+
+def test_publish_latest_artifact_overwrites_target_atomically(tmp_path) -> None:
+    source = tmp_path / "runs" / "run-1" / "metrics.json"
+    target = tmp_path / "reports" / "metrics" / "product_metrics.json"
+    source.parent.mkdir(parents=True, exist_ok=True)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    source.write_text('{"value": 10}', encoding="utf-8")
+    target.write_text('{"value": 1}', encoding="utf-8")
+
+    published_path = publish_latest_artifact(source, target)
+
+    assert published_path == target
+    assert target.read_text(encoding="utf-8") == '{"value": 10}'
+
+
+def test_prune_pipeline_runs_removes_older_run_directories(tmp_path) -> None:
+    runs_dir = tmp_path / "reports" / "runs"
+    recent = runs_dir / "20260319T120000Z-bbbb"
+    middle = runs_dir / "20260318T120000Z-aaaa"
+    old = runs_dir / "20260317T120000Z-9999"
+    for path in [recent, middle, old]:
+        path.mkdir(parents=True, exist_ok=True)
+
+    removed = prune_pipeline_runs(runs_dir, keep_last_runs=2)
+
+    assert old in removed
+    assert recent.exists()
+    assert middle.exists()
+    assert not old.exists()

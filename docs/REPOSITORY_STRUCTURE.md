@@ -41,6 +41,33 @@ That separation keeps the codebase readable while still looking like a small rea
 `-- pyproject.toml
 ```
 
+## Architecture Map (Mermaid)
+
+```mermaid
+graph TD
+    CLI[CLI Surfaces\nsrc/.../cli] --> CORE[Core Package\nsrc/amazon_sales_analysis]
+    API[FastAPI\napp/api.py] --> CORE
+    DASH[Streamlit\napp/streamlit_app.py] --> CORE
+    SCRIPTS[scripts/] --> CLI
+
+    CORE --> ING[ingestion/]
+    CORE --> TRN[transformations/]
+    CORE --> VAL[validation/]
+    CORE --> OBS[observability/]
+    CORE --> SRV[serving/]
+    CORE --> RUN[pipelines/runtime.py]
+
+    ING --> RAW[data/raw]
+    TRN --> BRONZE[data/bronze]
+    TRN --> SILVER[data/silver]
+    TRN --> GOLD[data/gold]
+    SRV --> WH[data/warehouse]
+
+    RUN --> RUNS[reports/runs/<run_id>]
+    OBS --> MET[reports/metrics]
+    SRV --> TBL[reports/tables]
+```
+
 Local environment folders such as `.venv/`, `.pytest_cache/`, `build/`, and `dist/` are intentionally excluded from this blueprint because they are not part of the source architecture.
 
 ## Top-Level Directories
@@ -106,6 +133,12 @@ Generated outputs and operational artifacts:
 - run manifests
 - run status
 - operational summaries
+
+Operational conventions:
+
+- immutable run artifacts under `reports/runs/<run_id>/`
+- stable snapshots in `reports/metrics/` and `reports/tables/` for API/CLI consumers
+- retention of old run directories controlled via `amazon-sales-pipeline --retention-runs`
 
 ### `scripts/`
 
@@ -206,6 +239,7 @@ Rules for shims:
 - Put generated artifacts in `data/` or `reports/`, not under source folders.
 - Keep API, Streamlit, and CLI surfaces thin.
 - Keep architecture and contribution standards updated when the layout changes.
+- Ensure run-level artifacts remain immutable; publish mutable `latest` snapshots as a separate concern.
 
 ## Dataset Source
 

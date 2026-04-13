@@ -119,16 +119,15 @@ def summarize_quality_gates(df: pd.DataFrame, settings: Settings | None = None) 
     )
 
 
-def export_quality_gate_report(df: pd.DataFrame, settings: Settings | None = None) -> Path:
+def export_quality_gate_report(
+    df: pd.DataFrame,
+    settings: Settings | None = None,
+    output_path: Path | None = None,
+) -> Path:
     resolved_settings = settings or get_settings()
+    report = build_quality_gate_report(df, resolved_settings)
     payload = {
-        "status": (
-            "fail"
-            if any(
-                item.status == "fail" for item in build_quality_gate_report(df, resolved_settings)
-            )
-            else "pass"
-        ),
+        "status": "fail" if any(item.status == "fail" for item in report) else "pass",
         "checks": [
             {
                 "check": item.check,
@@ -137,7 +136,8 @@ def export_quality_gate_report(df: pd.DataFrame, settings: Settings | None = Non
                 "threshold": item.threshold,
                 "message": item.message,
             }
-            for item in build_quality_gate_report(df, resolved_settings)
+            for item in report
         ],
     }
-    return write_json_artifact(payload, resolved_settings.metrics_dir / "quality_gates.json")
+    target = output_path or (resolved_settings.metrics_dir / "quality_gates.json")
+    return write_json_artifact(payload, target)

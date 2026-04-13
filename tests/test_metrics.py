@@ -116,7 +116,11 @@ def test_metrics_regression_report_flags_significant_drift(tmp_path) -> None:
         settings=settings,
         baseline_metrics=baseline_metrics,
     )
-    report_path = save_metrics_regression_report(report, settings=settings)
+    report_path = save_metrics_regression_report(
+        report,
+        settings=settings,
+        output_path=tmp_path / "runs" / "run-1" / "metrics" / "product_metrics_regression.json",
+    )
 
     stored_report = json.loads(report_path.read_text(encoding="utf-8"))
     assert stored_report["status"] == "fail"

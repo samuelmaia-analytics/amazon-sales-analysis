@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import shutil
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -30,6 +31,35 @@ def write_dataframe_artifact(df: pd.DataFrame, target: Path) -> Path:
 def write_json_artifact(payload: dict[str, Any], target: Path) -> Path:
     _atomic_write_text(target, json.dumps(payload, indent=2))
     return target
+
+
+def publish_latest_artifact(source: Path, target: Path) -> Path:
+    if not source.exists():
+        raise FileNotFoundError(f"Cannot publish latest artifact. Source not found: {source}")
+    target.parent.mkdir(parents=True, exist_ok=True)
+    with NamedTemporaryFile("wb", delete=False, dir=target.parent) as handle:
+        with source.open("rb") as source_handle:
+            shutil.copyfileobj(source_handle, handle)
+        temporary_path = Path(handle.name)
+    temporary_path.replace(target)
+    return target
+
+
+def prune_pipeline_runs(pipeline_runs_dir: Path, keep_last_runs: int) -> list[Path]:
+    if keep_last_runs < 1:
+        raise ValueError("keep_last_runs must be greater than or equal to 1")
+    if not pipeline_runs_dir.exists():
+        return []
+
+    run_directories = sorted(
+        [path for path in pipeline_runs_dir.iterdir() if path.is_dir()],
+        key=lambda path: path.name,
+        reverse=True,
+    )
+    obsolete_runs = run_directories[keep_last_runs:]
+    for run_path in obsolete_runs:
+        shutil.rmtree(run_path)
+    return obsolete_runs
 
 
 def compute_file_sha256(path: Path) -> str:

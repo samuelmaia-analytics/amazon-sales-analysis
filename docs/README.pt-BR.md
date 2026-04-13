@@ -69,6 +69,20 @@ Pacotes de domínio:
 - `pipelines/`
   utilitários compartilhados de execução para manifestos, status e persistência
 
+## Snapshot Mermaid
+
+```mermaid
+flowchart LR
+    A[Raw] --> B[Validacao]
+    B --> C[Bronze]
+    C --> D[Limpeza + Quality Gates]
+    D --> E[Silver]
+    E --> F[Gold + Warehouse]
+    F --> G[Metricas + Regressao]
+    G --> H[Manifesto + Run Status]
+    H --> I[Snapshots Latest]
+```
+
 ## Superfícies de Execução
 
 CLI:
@@ -77,6 +91,7 @@ CLI:
 amazon-sales-pipeline
 amazon-sales-pipeline --force-download
 amazon-sales-pipeline --fail-on-kpi-regression
+amazon-sales-pipeline --retention-runs 60
 amazon-sales-alerts
 amazon-sales-scenario
 amazon-sales-warehouse --show-operational-summary
@@ -101,11 +116,36 @@ Dashboard:
 Garantias já implementadas:
 
 - layout determinístico de artefatos por `run_id`
+- artefatos por execução persistidos em `reports/runs/<run_id>/`
+- snapshots analíticos `latest` estáveis para consumidores de API/CLI
+- retenção configurável de execuções (`--retention-runs`)
 - reutilização controlada do arquivo bruto para reprocessamento
 - escrita atômica de CSVs e JSONs críticos
 - controles de qualidade sobre o dataset curado
 - comparação de regressão de KPIs contra uma linha de base persistida
 - materialização local do warehouse quando DuckDB está disponível
+
+## Ciclo de Vida dos Artefatos
+
+- cada execução gera artefatos imutáveis em `reports/runs/<run_id>/`
+- snapshots `latest` estáveis são publicados em `reports/metrics/` e `reports/tables/`
+- a retenção é configurável com `amazon-sales-pipeline --retention-runs <N>`
+- manifestos de execução registram hashes e caminhos de saída para auditoria e replay
+
+## Quickstart e Operação
+
+```bash
+python -m pip install -e .[dev]
+amazon-sales-pipeline --retention-runs 60
+amazon-sales-warehouse --show-operational-summary
+```
+
+## Governança e Boas Práticas LGPD
+
+- por padrão, o pipeline persiste saídas operacionais e analíticas agregadas
+- configuração por ambiente evita credenciais em arquivos versionados
+- contratos, manifestos e status de execução fortalecem auditoria e rastreabilidade
+- testes usam fixtures sintéticas para evitar exposição de dados sensíveis de produção
 
 ## Decisões de Engenharia
 
@@ -124,10 +164,14 @@ make build-check
 
 A validação atual inclui:
 
+- `black --check .`
+- `isort --check-only .`
 - `ruff check .`
 - `mypy src tests app alerts scripts`
 - `pytest -q`
 - `python -m build --sdist --wheel`
+
+Os mesmos gates de qualidade rodam no GitHub Actions CI para Python 3.12 e 3.13.
 
 ## Trade-offs
 
