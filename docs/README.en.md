@@ -21,7 +21,7 @@ The repository demonstrates a production-oriented analytics workflow:
 ## Runtime Flow
 
 ```mermaid
-flowchart LR
+graph LR
     A[Raw Ingestion] --> B[Contract + Schema Validation]
     B --> C[Bronze Snapshot]
     C --> D[Cleaning + Quality Gates]
@@ -78,4 +78,3 @@ Includes:
 - International: [../README.md](../README.md)
 - PT-BR: [README.pt-BR.md](README.pt-BR.md)
 - PT-PT: [README.pt-PT.md](README.pt-PT.md)
-

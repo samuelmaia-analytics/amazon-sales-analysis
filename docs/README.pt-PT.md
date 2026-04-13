@@ -21,7 +21,7 @@ O repositório demonstra um fluxo analítico orientado a produção com:
 ## Fluxo de Runtime
 
 ```mermaid
-flowchart LR
+graph LR
     A[Ingestão Bruta] --> B[Contrato + Schema]
     B --> C[Snapshot Bronze]
     C --> D[Limpeza + Quality Gates]
@@ -78,4 +78,3 @@ Inclui:
 - International: [../README.md](../README.md)
 - PT-BR: [README.pt-BR.md](README.pt-BR.md)
 - PT-PT: [README.pt-PT.md](README.pt-PT.md)
-

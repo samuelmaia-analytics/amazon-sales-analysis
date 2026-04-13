@@ -25,7 +25,7 @@ The platform supports recurring commercial decisions:
 ## Architecture at a Glance
 
 ```mermaid
-flowchart LR
+graph LR
     A[Raw Ingestion] --> B[Contract + Schema Validation]
     B --> C[Bronze Snapshot]
     C --> D[Cleaning + Normalization]
