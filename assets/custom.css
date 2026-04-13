@@ -8,6 +8,14 @@
     --white: #ffffff;
 }
 
+header[data-testid="stHeader"] {
+    display: none !important;
+}
+
+[data-testid="stToolbar"] {
+    display: none !important;
+}
+
 [data-testid="stAppViewContainer"],
 [data-testid="stAppViewContainer"] .stMarkdown,
 [data-testid="stAppViewContainer"] .stText,
@@ -36,7 +44,7 @@
 .main .stMainBlockContainer {
     max-width: none;
     width: 100%;
-    padding-top: 3.75rem !important;
+    padding-top: 1.2rem !important;
     padding-left: 1.25rem;
     padding-right: 1.25rem;
 }
@@ -196,7 +204,7 @@
     [data-testid="stAppViewBlockContainer"],
     .main .block-container,
     .main .stMainBlockContainer {
-        padding-top: 3.35rem !important;
+        padding-top: 1rem !important;
         padding-left: 0.9rem;
         padding-right: 0.9rem;
     }
