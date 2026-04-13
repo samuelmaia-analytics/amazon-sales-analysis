@@ -2,4 +2,7 @@ blank_issues_enabled: false
 contact_links:
   - name: Contribution Guide
     url: https://github.com/samuelmaia-analytics/amazon-sales-analysis/blob/main/CONTRIBUTING.md
-    about: Review the contribution workflow, validation requirements, and repository standards before opening broad changes.
+    about: Read contribution workflow, required quality checks, and review standards before submitting broad changes.
+  - name: Repository Structure
+    url: https://github.com/samuelmaia-analytics/amazon-sales-analysis/blob/main/docs/REPOSITORY_STRUCTURE.md
+    about: Check ownership boundaries and placement rules before proposing structural changes.

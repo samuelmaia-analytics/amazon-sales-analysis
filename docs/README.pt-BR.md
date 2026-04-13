@@ -1,160 +1,55 @@
 # Amazon Sales Analytics Platform (Guia PT-BR)
 
-## Seleção de Idioma
+Este documento resume arquitetura, operação e padrão de engenharia para avaliação técnica rápida.
 
-- International: [../README.md](../README.md)
-- PT-BR: [README.pt-BR.md](README.pt-BR.md)
-- PT-PT: [README.pt-PT.md](README.pt-PT.md)
-- Contribuição: [../CONTRIBUTING.md](../CONTRIBUTING.md)
+Referências canônicas:
+
+- Visão principal: [../README.md](../README.md)
+- Fluxo de contribuição: [../CONTRIBUTING.md](../CONTRIBUTING.md)
 - Estrutura do repositório: [REPOSITORY_STRUCTURE.md](REPOSITORY_STRUCTURE.md)
 
-## Propósito
+## Escopo
 
-Este documento é o guia rápido em PT-BR do repositório. O padrão canônico de arquitetura e contribuição está no [README principal](../README.md) e em [CONTRIBUTING.md](../CONTRIBUTING.md).
+O projeto demonstra um fluxo analítico orientado a produção com:
 
-A plataforma foi estruturada para demonstrar um sistema de dados pequeno, mas crível, com:
+- execução batch reprocessável
+- validação de contrato, schema e qualidade
+- controle de regressão de KPIs entre runs
+- evidência operacional por execução
+- superfícies de consumo via API, CLI e dashboard
 
-- execução batch reproduzível
-- processamento em camadas do dado bruto ao curado
-- validação de contratos e controles de qualidade
-- controle de regressão de KPIs entre execuções
-- disponibilização analítica via API, CLI e Streamlit
-- visibilidade operacional por manifestos, status de execução e sumários
-
-## Fonte do Dataset
-
-- Dataset Kaggle: `aliiihussain/amazon-sales-dataset`
-- Pacote de ingestão: `kagglehub`
-- Caminho bruto local: `data/raw/amazon_sales/amazon_sales_dataset.csv`
-
-## Perguntas de Negócio
-
-O projeto foi desenhado para responder a perguntas comerciais como:
-
-- quanto de receita foi gerado e quanto se perdeu por vazamento de desconto
-- quais categorias concentram receita e pressão promocional
-- onde existem picos de desconto que exigem acompanhamento
-- se os KPIs comerciais estão estáveis ou em drift
-- se a última execução gerou saídas analíticas confiáveis
-
-## Visão da Arquitetura
-
-```text
-data/
-|-- raw/
-|-- bronze/
-|-- silver/
-|-- gold/
-`-- warehouse/
-
-reports/
-|-- figures/
-|-- metrics/
-|-- runs/
-`-- tables/
-```
-
-Pacotes de domínio:
-
-- `ingestion/`
-  aquisição do dataset bruto e reaproveitamento da landing local
-- `transformations/`
-  limpeza, normalização, deduplicação e persistência de saídas processadas
-- `validation/`
-  contratos, validação de esquema e controles de qualidade
-- `observability/`
-  logging, empacotamento de métricas e controle de regressão de KPIs
-- `serving/`
-  materialização do warehouse, histórico de execuções e sumários operacionais
-- `pipelines/`
-  utilitários compartilhados de execução para manifestos, status e persistência
-
-## Snapshot Mermaid
+## Fluxo de Runtime
 
 ```mermaid
 flowchart LR
-    A[Raw] --> B[Validacao]
-    B --> C[Bronze]
+    A[Ingestão Bruta] --> B[Contrato + Schema]
+    B --> C[Snapshot Bronze]
     C --> D[Limpeza + Quality Gates]
-    D --> E[Silver]
+    D --> E[Snapshot Silver]
     E --> F[Gold + Warehouse]
-    F --> G[Metricas + Regressao]
+    F --> G[Métricas + Regressão]
     G --> H[Manifesto + Run Status]
     H --> I[Snapshots Latest]
 ```
 
-## Superfícies de Execução
-
-CLI:
+## Comandos Principais
 
 ```bash
-amazon-sales-pipeline
-amazon-sales-pipeline --force-download
-amazon-sales-pipeline --fail-on-kpi-regression
-amazon-sales-pipeline --retention-runs 60
-amazon-sales-alerts
-amazon-sales-scenario
-amazon-sales-warehouse --show-operational-summary
+PYTHONPATH=src python -m amazon_sales_analysis.cli.pipeline --retention-runs 60
+PYTHONPATH=src python -m amazon_sales_analysis.cli.warehouse --show-operational-summary
+uvicorn app.api:app --reload
+streamlit run app/streamlit_app.py
 ```
 
-API:
+## Confiabilidade Operacional
 
-- `GET /health`
-- `GET /health/ready`
-- `GET /metrics/summary`
-- `GET /warehouse/category-revenue`
-- `GET /pipeline/runs`
-- `GET /pipeline/runs/compare-latest`
-- `GET /operations/latest`
+- artefatos imutáveis em `reports/runs/<run_id>/`
+- snapshots `latest` estáveis para consumo
+- retenção explícita de runs
+- status operacional preservado também em falhas
+- metadados de execução auditáveis
 
-Dashboard:
-
-- O Streamlit expõe KPIs analíticos e visibilidade operacional das execuções.
-
-## Runtime e Confiabilidade
-
-Garantias já implementadas:
-
-- layout determinístico de artefatos por `run_id`
-- artefatos por execução persistidos em `reports/runs/<run_id>/`
-- snapshots analíticos `latest` estáveis para consumidores de API/CLI
-- retenção configurável de execuções (`--retention-runs`)
-- reutilização controlada do arquivo bruto para reprocessamento
-- escrita atômica de CSVs e JSONs críticos
-- controles de qualidade sobre o dataset curado
-- comparação de regressão de KPIs contra uma linha de base persistida
-- materialização local do warehouse quando DuckDB está disponível
-
-## Ciclo de Vida dos Artefatos
-
-- cada execução gera artefatos imutáveis em `reports/runs/<run_id>/`
-- snapshots `latest` estáveis são publicados em `reports/metrics/` e `reports/tables/`
-- a retenção é configurável com `amazon-sales-pipeline --retention-runs <N>`
-- manifestos de execução registram hashes e caminhos de saída para auditoria e replay
-
-## Quickstart e Operação
-
-```bash
-python -m pip install -e .[dev]
-amazon-sales-pipeline --retention-runs 60
-amazon-sales-warehouse --show-operational-summary
-```
-
-## Governança e Boas Práticas LGPD
-
-- por padrão, o pipeline persiste saídas operacionais e analíticas agregadas
-- configuração por ambiente evita credenciais em arquivos versionados
-- contratos, manifestos e status de execução fortalecem auditoria e rastreabilidade
-- testes usam fixtures sintéticas para evitar exposição de dados sensíveis de produção
-
-## Decisões de Engenharia
-
-- O repositório permanece local-first em vez de simular infraestrutura cloud sem valor operacional real.
-- API, CLI e dashboard são finos e reutilizam a mesma lógica do pacote.
-- Os módulos de compatibilidade continuam disponíveis para preservar imports estáveis durante a evolução da estrutura.
-- Os artefatos operacionais ficam locais para manter o projeto reproduzível e fácil de auditar.
-
-## Fluxo de Validação
+## Qualidade
 
 ```bash
 make quality
@@ -162,7 +57,7 @@ make test
 make build-check
 ```
 
-A validação atual inclui:
+Inclui:
 
 - `black --check .`
 - `isort --check-only .`
@@ -171,17 +66,16 @@ A validação atual inclui:
 - `pytest -q`
 - `python -m build --sdist --wheel`
 
-Os mesmos gates de qualidade rodam no GitHub Actions CI para Python 3.12 e 3.13.
+## Governança
 
-## Trade-offs
+- testes com dados sintéticos por padrão
+- configuração orientada por ambiente
+- rastreabilidade por run status e manifesto
+- arquitetura local-first com trade-offs explícitos
 
-- não há scheduler ou orquestrador externo
-- não há backend centralizado de telemetria
-- não há repositório remoto de metadados
-- ainda não existe estratégia completa de materialização incremental no warehouse
+## Idiomas
 
-## Próximas Referências
+- International: [../README.md](../README.md)
+- PT-BR: [README.pt-BR.md](README.pt-BR.md)
+- PT-PT: [README.pt-PT.md](README.pt-PT.md)
 
-- Visão principal: [../README.md](../README.md)
-- Guia de contribuição: [../CONTRIBUTING.md](../CONTRIBUTING.md)
-- Guia de estrutura: [REPOSITORY_STRUCTURE.md](REPOSITORY_STRUCTURE.md)

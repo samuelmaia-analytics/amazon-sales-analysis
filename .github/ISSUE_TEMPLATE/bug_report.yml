@@ -1,13 +1,13 @@
 name: Bug Report
-description: Report a defect, regression, data quality issue, or operational failure.
-title: "[Bug]: "
+description: Report defects, regressions, data quality failures, or operational incidents.
+title: "[Bug] "
 labels: ["bug"]
 body:
   - type: dropdown
     id: severity
     attributes:
       label: Severity
-      description: Classify the production and maintenance impact.
+      description: Business and operational impact.
       options:
         - critical
         - high
@@ -15,59 +15,71 @@ body:
         - low
     validations:
       required: true
+
   - type: dropdown
-    id: surface
+    id: affected_surface
     attributes:
       label: Affected surface
       options:
         - pipeline
-        - validation
+        - data quality
+        - contracts/schema
         - warehouse
         - api
-        - streamlit
-        - automation
+        - dashboard
+        - ci/cd
         - documentation
     validations:
       required: true
+
   - type: textarea
-    id: summary
+    id: observed_behavior
     attributes:
-      label: Summary
-      description: Describe the problem and the expected behavior.
+      label: Observed behavior
+      description: What happened?
     validations:
       required: true
+
   - type: textarea
-    id: reproduction
+    id: expected_behavior
     attributes:
-      label: Reproduction
-      description: Provide deterministic steps, inputs, and commands.
+      label: Expected behavior
+      description: What should have happened?
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproducibility
+    attributes:
+      label: Reproduction steps
       placeholder: |
-        1. Run ...
-        2. Use dataset/config ...
-        3. Observe ...
+        1. Command/config used
+        2. Input dataset or environment
+        3. Result / error
     validations:
       required: true
-  - type: textarea
-    id: impact
-    attributes:
-      label: Impact
-      description: Explain business, operational, or engineering impact.
-    validations:
-      required: true
+
   - type: textarea
     id: evidence
     attributes:
-      label: Logs and evidence
-      description: Paste logs, tracebacks, screenshots, or manifest excerpts.
+      label: Evidence
+      description: Logs, traceback, screenshots, run manifest/status excerpts.
+    validations:
+      required: true
+
   - type: textarea
     id: environment
     attributes:
-      label: Environment details
-      description: Include branch, OS, Python version, and relevant config overrides.
-  - type: markdown
+      label: Environment
+      description: Branch, OS, Python version, and relevant env overrides.
+    validations:
+      required: true
+
+  - type: textarea
+    id: business_impact
     attributes:
-      value: |
-        Review the main docs before opening larger defects tied to workflow or architecture:
-        - `README.md`
-        - `docs/REPOSITORY_STRUCTURE.md`
-        - `CONTRIBUTING.md`
+      label: Business/operational impact
+      description: What is blocked or at risk?
+    validations:
+      required: true
+

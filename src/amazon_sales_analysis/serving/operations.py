@@ -21,6 +21,32 @@ def _artifact_payload(path: Path | None) -> dict[str, Any]:
     return payload
 
 
+def _latest_run_status_payload(settings: Settings) -> dict[str, Any] | None:
+    status_paths = sorted(settings.pipeline_runs_dir.glob("*/run_status.json"), reverse=True)
+    if not status_paths:
+        return None
+    return _artifact_payload(status_paths[0])
+
+
+def _build_missing_artifact_summary(
+    *,
+    run_id: str,
+    started_at_utc: str,
+    pipeline_version: str,
+    run_status: dict[str, Any],
+) -> dict[str, Any]:
+    missing_artifact = {"status": "missing", "path": ""}
+    return build_operational_summary_payload(
+        run_id=run_id,
+        started_at_utc=started_at_utc,
+        pipeline_version=pipeline_version,
+        row_counts={},
+        quality_report=missing_artifact,
+        metrics_regression=missing_artifact,
+        warehouse_validation=missing_artifact,
+    ) | {"run_status": run_status}
+
+
 def build_operational_summary_payload(
     *,
     run_id: str,
@@ -63,10 +89,31 @@ def write_operational_summary(
 def latest_operational_summary(settings: Settings | None = None) -> dict[str, Any]:
     resolved_settings = settings or get_settings()
     records = list_run_records(settings=resolved_settings)
+    latest_run_status = _latest_run_status_payload(resolved_settings)
+
     if not records:
-        raise FileNotFoundError("No pipeline run manifests found.")
+        if latest_run_status is None:
+            raise FileNotFoundError("No pipeline run manifests found.")
+        return _build_missing_artifact_summary(
+            run_id=str(latest_run_status.get("run_id", "unknown")),
+            started_at_utc=str(latest_run_status.get("started_at_utc", "")),
+            pipeline_version="",
+            run_status=latest_run_status,
+        )
 
     latest = records[0]
+    latest_manifest_run_id = latest.run_id
+    if latest_run_status is not None:
+        status_run_id = str(latest_run_status.get("run_id", ""))
+        status_value = str(latest_run_status.get("status", ""))
+        if status_run_id and status_run_id > latest_manifest_run_id and status_value != "succeeded":
+            return _build_missing_artifact_summary(
+                run_id=status_run_id,
+                started_at_utc=str(latest_run_status.get("started_at_utc", "")),
+                pipeline_version="",
+                run_status=latest_run_status,
+            )
+
     layer_outputs = latest.manifest.get("outputs", {}).get("layers", {})
     status_path = latest.manifest_path.parent / "run_status.json"
     run_status = _artifact_payload(status_path)

@@ -1,6 +1,6 @@
 name: Feature Request
-description: Propose a new capability, workflow, or engineering improvement.
-title: "[Feature]: "
+description: Propose product, platform, reliability, or DX improvements.
+title: "[Feature] "
 labels: ["enhancement"]
 body:
   - type: dropdown
@@ -8,51 +8,60 @@ body:
     attributes:
       label: Area
       options:
-        - data pipeline
-        - data quality
-        - warehouse
+        - pipeline/runtime
+        - data quality/contracts
+        - warehouse/serving
         - api
-        - streamlit
-        - developer experience
+        - dashboard
+        - observability
+        - ci/cd
         - documentation
-        - repository governance
     validations:
       required: true
+
   - type: textarea
     id: problem
     attributes:
       label: Problem statement
-      description: What gap, inefficiency, or operational risk are we solving?
+      description: What gap or risk are we addressing?
     validations:
       required: true
+
   - type: textarea
     id: proposal
     attributes:
       label: Proposed solution
-      description: Describe expected behavior, boundaries, and key constraints.
+      description: Expected behavior, constraints, and design boundaries.
     validations:
       required: true
+
   - type: textarea
     id: acceptance
     attributes:
       label: Acceptance criteria
-      description: Define how the change will be considered complete.
+      description: Objective completion conditions.
     validations:
       required: true
-  - type: textarea
-    id: risks
-    attributes:
-      label: Risks and trade-offs
-      description: Note complexity, migration impact, operational cost, or maintenance burden.
+
   - type: textarea
     id: alternatives
     attributes:
       label: Alternatives considered
-      description: List rejected or possible alternative approaches.
-  - type: markdown
+      description: Rejected options and why.
+
+  - type: textarea
+    id: risks
     attributes:
-      value: |
-        If this proposal changes behavior, workflow, or package layout, review:
-        - `README.md`
-        - `docs/REPOSITORY_STRUCTURE.md`
-        - `CONTRIBUTING.md`
+      label: Risks and trade-offs
+      description: Complexity, migration, cost, operational implications.
+    validations:
+      required: true
+
+  - type: textarea
+    id: validation
+    attributes:
+      label: Validation plan
+      description: Which tests, checks, and observability signals will confirm success?
+    validations:
+      required: true
+
