@@ -1,0 +1,54 @@
+{
+  "status": "pass",
+  "checks": [
+    {
+      "check": "row_count",
+      "status": "pass",
+      "value": 50000,
+      "threshold": "> 0",
+      "message": "dataset limpo nao pode ser vazio"
+    },
+    {
+      "check": "discount_percent_range",
+      "status": "pass",
+      "value": 0,
+      "threshold": "0 invalid rows",
+      "message": "discount_percent deve permanecer na faixa [0, 100]"
+    },
+    {
+      "check": "rating_range",
+      "status": "pass",
+      "value": 0,
+      "threshold": "0 invalid rows",
+      "message": "rating deve permanecer na faixa [0, 5]"
+    },
+    {
+      "check": "quantity_positive",
+      "status": "pass",
+      "value": 0,
+      "threshold": "0 invalid rows",
+      "message": "quantity_sold deve ser maior que zero"
+    },
+    {
+      "check": "price_positive",
+      "status": "pass",
+      "value": 0,
+      "threshold": "0 invalid rows",
+      "message": "price nao pode ser negativo"
+    },
+    {
+      "check": "business_key_duplicates",
+      "status": "pass",
+      "value": 0,
+      "threshold": "0 duplicate rows",
+      "message": "a chave de negocio order_id + product_id + order_date deve ser unica"
+    },
+    {
+      "check": "data_freshness_days",
+      "status": "pass",
+      "value": 834,
+      "threshold": "<= 2000 days",
+      "message": "o dataset nao deve estar obsoleto para o SLA definido"
+    }
+  ]
+}

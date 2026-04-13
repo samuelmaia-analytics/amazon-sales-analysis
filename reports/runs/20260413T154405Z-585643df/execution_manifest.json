@@ -1,0 +1,301 @@
+{
+  "run_id": "20260413T154405Z-585643df",
+  "environment": "dev",
+  "started_at_utc": "2026-04-13T15:44:05.671361+00:00",
+  "completed_at_utc": "2026-04-13T15:44:14.658028+00:00",
+  "duration_seconds": 8.987,
+  "status": "succeeded",
+  "error_message": "",
+  "pipeline_version": "1.0.0",
+  "dataset_path": "C:\\Users\\samue\\PycharmProjects\\amazon-sales-analysis\\data\\raw\\amazon_sales\\amazon_sales_dataset.csv",
+  "outputs": {
+    "processed_dataset": {
+      "path": "C:\\Users\\samue\\PycharmProjects\\amazon-sales-analysis\\data\\processed\\amazon_sales_clean.csv",
+      "sha256": "7703873388254221cb496c2b36eb958ae82856b74b8ae8089b3a51f7e2c48f5b"
+    },
+    "contract_snapshot": {
+      "path": "C:\\Users\\samue\\PycharmProjects\\amazon-sales-analysis\\reports\\runs\\20260413T154405Z-585643df\\contracts\\sales_dataset.contract.json",
+      "sha256": "fa1a1368238f8c181cfe3abccdf73a9c41021050b0f2a6f81486dbf688f532c1"
+    },
+    "metrics": {
+      "path": "C:\\Users\\samue\\PycharmProjects\\amazon-sales-analysis\\reports\\runs\\20260413T154405Z-585643df\\metrics\\product_metrics.json",
+      "sha256": "384e5d086904f643a23fb38f07ff012c81183647697c756d1fe856747c5d2953"
+    },
+    "alerts": {
+      "path": "C:\\Users\\samue\\PycharmProjects\\amazon-sales-analysis\\reports\\runs\\20260413T154405Z-585643df\\tables\\discount_spike_alerts.csv",
+      "sha256": "6322497ddcbf15a34a479b7b479ead2f6c48b750fce61c4783b4cf6efa5a70b6"
+    },
+    "recommendations": {
+      "path": "C:\\Users\\samue\\PycharmProjects\\amazon-sales-analysis\\reports\\runs\\20260413T154405Z-585643df\\tables\\actionable_recommendations.csv",
+      "sha256": "3673dba9e0aa6793df363328db7d9097b7a72f62f13da89e0d3ef855b709e47b"
+    },
+    "executive_insights": {
+      "path": "C:\\Users\\samue\\PycharmProjects\\amazon-sales-analysis\\reports\\runs\\20260413T154405Z-585643df\\tables\\executive_insights.csv",
+      "sha256": "d02aa9a9da129696776bd412aae97b214a1c5121bc13f2a17455055d81fc9470"
+    },
+    "tables": {
+      "category_performance": {
+        "path": "C:\\Users\\samue\\PycharmProjects\\amazon-sales-analysis\\reports\\runs\\20260413T154405Z-585643df\\tables\\category_performance.csv",
+        "sha256": "fc93198630e590a215194be9456ad86140288dbd5d20ff2aa0b1f8c6b4e6514d"
+      },
+      "data_quality_audit": {
+        "path": "C:\\Users\\samue\\PycharmProjects\\amazon-sales-analysis\\reports\\runs\\20260413T154405Z-585643df\\tables\\data_quality_audit.csv",
+        "sha256": "f7af4b5b8ec4b494a8773a109fe02761ca15bbf4079bba8138f5b597190f7e65"
+      },
+      "insights_summary": {
+        "path": "C:\\Users\\samue\\PycharmProjects\\amazon-sales-analysis\\reports\\runs\\20260413T154405Z-585643df\\tables\\insights_summary.csv",
+        "sha256": "d02aa9a9da129696776bd412aae97b214a1c5121bc13f2a17455055d81fc9470"
+      },
+      "kpi_catalog": {
+        "path": "C:\\Users\\samue\\PycharmProjects\\amazon-sales-analysis\\reports\\runs\\20260413T154405Z-585643df\\tables\\kpi_catalog.csv",
+        "sha256": "de7134c8315d19edd55baddad43ac51eb0d1f056a9d6f64fd0be9f4eb7c043d5"
+      },
+      "kpi_summary": {
+        "path": "C:\\Users\\samue\\PycharmProjects\\amazon-sales-analysis\\reports\\runs\\20260413T154405Z-585643df\\tables\\kpi_summary.csv",
+        "sha256": "acefa809b2701f2f40078cae240071707e539eb64a78a27aaf3340967d9da21e"
+      },
+      "monthly_trend": {
+        "path": "C:\\Users\\samue\\PycharmProjects\\amazon-sales-analysis\\reports\\runs\\20260413T154405Z-585643df\\tables\\monthly_trend.csv",
+        "sha256": "a2a5a047665c73c854a16f26d1f19e8a60b82690ef16c983cdec1d9de528a1ad"
+      },
+      "performance_distribution": {
+        "path": "C:\\Users\\samue\\PycharmProjects\\amazon-sales-analysis\\reports\\runs\\20260413T154405Z-585643df\\tables\\performance_distribution.csv",
+        "sha256": "d7a89699c8695db267629eaf7e0cdb336df3b2c902c87d7bf7da5d458f81dbf3"
+      },
+      "product_contribution": {
+        "path": "C:\\Users\\samue\\PycharmProjects\\amazon-sales-analysis\\reports\\runs\\20260413T154405Z-585643df\\tables\\product_contribution.csv",
+        "sha256": "61294aeab00570bf24170a1a14b3a29ef7c2148534f7a523b92b41eb6204874d"
+      },
+      "quality_gate_summary": {
+        "path": "C:\\Users\\samue\\PycharmProjects\\amazon-sales-analysis\\reports\\runs\\20260413T154405Z-585643df\\tables\\quality_gate_summary.csv",
+        "sha256": "22f914d66fabcc16843a7cdf15124a2c8c9512d12f4651c95b9022e7601d9dda"
+      }
+    },
+    "layers": {
+      "bronze_raw_snapshot": {
+        "path": "C:\\Users\\samue\\PycharmProjects\\amazon-sales-analysis\\data\\bronze\\20260413T154405Z-585643df_amazon_sales_raw.csv",
+        "sha256": "c076c238eba1feaf11090e30be0dcb1f104a93834b94a59ad8f37700707e180e"
+      },
+      "gold_commercial_mart": {
+        "path": "C:\\Users\\samue\\PycharmProjects\\amazon-sales-analysis\\data\\gold\\20260413T154405Z-585643df_commercial_mart.csv",
+        "sha256": "6e46efc49b7b75e31b38d9f922cfb76562fe1b281200b44c325c0cfbe4cc88fe"
+      },
+      "metrics_regression": {
+        "path": "C:\\Users\\samue\\PycharmProjects\\amazon-sales-analysis\\reports\\runs\\20260413T154405Z-585643df\\metrics\\product_metrics_regression.json",
+        "sha256": "832f473aa4ad6da4625c282f444cc6b58cc2347dfc4c1d0120f5c0e0621be98e"
+      },
+      "quality_gates": {
+        "path": "C:\\Users\\samue\\PycharmProjects\\amazon-sales-analysis\\reports\\runs\\20260413T154405Z-585643df\\metrics\\quality_gates.json",
+        "sha256": "6d054722fccbe2c891a8555c5aa0046b04c2ca4d67d5094ec5838d60dac8f736"
+      },
+      "silver_clean_snapshot": {
+        "path": "C:\\Users\\samue\\PycharmProjects\\amazon-sales-analysis\\data\\silver\\20260413T154405Z-585643df_amazon_sales_clean.csv",
+        "sha256": "7703873388254221cb496c2b36eb958ae82856b74b8ae8089b3a51f7e2c48f5b"
+      },
+      "warehouse_validation": {
+        "path": "C:\\Users\\samue\\PycharmProjects\\amazon-sales-analysis\\data\\warehouse\\warehouse_validation.json",
+        "sha256": "ea612448e2ca5eb6043a8e98adc5f111298e5389cb97a3df3019ad5ac6280a5d"
+      }
+    }
+  },
+  "row_counts": {
+    "raw": 50000,
+    "clean": 50000,
+    "featured": 50000,
+    "alerts": 39
+  },
+  "data_profiles": {
+    "raw": {
+      "row_count": 50000,
+      "column_count": 13,
+      "columns": [
+        "order_id",
+        "order_date",
+        "product_id",
+        "product_category",
+        "price",
+        "discount_percent",
+        "quantity_sold",
+        "customer_region",
+        "payment_method",
+        "rating",
+        "review_count",
+        "discounted_price",
+        "total_revenue"
+      ],
+      "dtypes": {
+        "order_id": "int64",
+        "order_date": "object",
+        "product_id": "int64",
+        "product_category": "object",
+        "price": "float64",
+        "discount_percent": "int64",
+        "quantity_sold": "int64",
+        "customer_region": "object",
+        "payment_method": "object",
+        "rating": "float64",
+        "review_count": "int64",
+        "discounted_price": "float64",
+        "total_revenue": "float64"
+      },
+      "null_counts": {
+        "order_id": 0,
+        "order_date": 0,
+        "product_id": 0,
+        "product_category": 0,
+        "price": 0,
+        "discount_percent": 0,
+        "quantity_sold": 0,
+        "customer_region": 0,
+        "payment_method": 0,
+        "rating": 0,
+        "review_count": 0,
+        "discounted_price": 0,
+        "total_revenue": 0
+      },
+      "min_order_date": "2022-01-01T00:00:00",
+      "max_order_date": "2023-12-31T00:00:00"
+    },
+    "clean": {
+      "row_count": 50000,
+      "column_count": 13,
+      "columns": [
+        "order_id",
+        "order_date",
+        "product_id",
+        "product_category",
+        "price",
+        "discount_percent",
+        "quantity_sold",
+        "customer_region",
+        "payment_method",
+        "rating",
+        "review_count",
+        "discounted_price",
+        "total_revenue"
+      ],
+      "dtypes": {
+        "order_id": "int64",
+        "order_date": "datetime64[ns]",
+        "product_id": "int64",
+        "product_category": "object",
+        "price": "float64",
+        "discount_percent": "int64",
+        "quantity_sold": "int64",
+        "customer_region": "object",
+        "payment_method": "object",
+        "rating": "float64",
+        "review_count": "int64",
+        "discounted_price": "float64",
+        "total_revenue": "float64"
+      },
+      "null_counts": {
+        "order_id": 0,
+        "order_date": 0,
+        "product_id": 0,
+        "product_category": 0,
+        "price": 0,
+        "discount_percent": 0,
+        "quantity_sold": 0,
+        "customer_region": 0,
+        "payment_method": 0,
+        "rating": 0,
+        "review_count": 0,
+        "discounted_price": 0,
+        "total_revenue": 0
+      },
+      "min_order_date": "2022-01-01T00:00:00",
+      "max_order_date": "2023-12-31T00:00:00"
+    },
+    "featured": {
+      "row_count": 50000,
+      "column_count": 26,
+      "columns": [
+        "order_id",
+        "order_date",
+        "product_id",
+        "product_category",
+        "price",
+        "discount_percent",
+        "quantity_sold",
+        "customer_region",
+        "payment_method",
+        "rating",
+        "review_count",
+        "discounted_price",
+        "total_revenue",
+        "year",
+        "month",
+        "month_name",
+        "quarter",
+        "day_of_week",
+        "is_weekend",
+        "gross_revenue",
+        "discount_value",
+        "net_revenue_retained",
+        "revenue_per_unit",
+        "discount_impact_pct",
+        "month_start",
+        "order_revenue_share"
+      ],
+      "dtypes": {
+        "order_id": "int64",
+        "order_date": "datetime64[ns]",
+        "product_id": "int64",
+        "product_category": "object",
+        "price": "float64",
+        "discount_percent": "int64",
+        "quantity_sold": "int64",
+        "customer_region": "object",
+        "payment_method": "object",
+        "rating": "float64",
+        "review_count": "int64",
+        "discounted_price": "float64",
+        "total_revenue": "float64",
+        "year": "int32",
+        "month": "int32",
+        "month_name": "object",
+        "quarter": "int32",
+        "day_of_week": "object",
+        "is_weekend": "bool",
+        "gross_revenue": "float64",
+        "discount_value": "float64",
+        "net_revenue_retained": "float64",
+        "revenue_per_unit": "float64",
+        "discount_impact_pct": "float64",
+        "month_start": "datetime64[ns]",
+        "order_revenue_share": "float64"
+      },
+      "null_counts": {
+        "order_id": 0,
+        "order_date": 0,
+        "product_id": 0,
+        "product_category": 0,
+        "price": 0,
+        "discount_percent": 0,
+        "quantity_sold": 0,
+        "customer_region": 0,
+        "payment_method": 0,
+        "rating": 0,
+        "review_count": 0,
+        "discounted_price": 0,
+        "total_revenue": 0,
+        "year": 0,
+        "month": 0,
+        "month_name": 0,
+        "quarter": 0,
+        "day_of_week": 0,
+        "is_weekend": 0,
+        "gross_revenue": 0,
+        "discount_value": 0,
+        "net_revenue_retained": 0,
+        "revenue_per_unit": 0,
+        "discount_impact_pct": 0,
+        "month_start": 0,
+        "order_revenue_share": 0
+      },
+      "min_order_date": "2022-01-01T00:00:00",
+      "max_order_date": "2023-12-31T00:00:00"
+    }
+  }
+}

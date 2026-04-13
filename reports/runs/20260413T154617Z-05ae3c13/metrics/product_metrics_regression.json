@@ -1,0 +1,64 @@
+{
+  "status": "pass",
+  "baseline_path": "C:\\Users\\samue\\PycharmProjects\\amazon-sales-analysis\\reports\\metrics\\product_metrics_baseline.json",
+  "tolerance_pct": 0.15,
+  "kpi_deltas": {
+    "total_revenue": {
+      "baseline": 32866579.536,
+      "current": 32866579.536,
+      "delta": 0.0,
+      "delta_pct": 0.0,
+      "status": "pass"
+    },
+    "gross_revenue": {
+      "baseline": 37913104.54000001,
+      "current": 37913104.54000001,
+      "delta": 0.0,
+      "delta_pct": 0.0,
+      "status": "pass"
+    },
+    "discount_leakage": {
+      "baseline": 5046525.004000008,
+      "current": 5046525.004000008,
+      "delta": 0.0,
+      "delta_pct": 0.0,
+      "status": "pass"
+    },
+    "north_star_nrr": {
+      "baseline": 0.866892330099855,
+      "current": 0.866892330099855,
+      "delta": 0.0,
+      "delta_pct": 0.0,
+      "status": "pass"
+    },
+    "total_orders": {
+      "baseline": 50000.0,
+      "current": 50000.0,
+      "delta": 0.0,
+      "delta_pct": 0.0,
+      "status": "pass"
+    },
+    "avg_ticket": {
+      "baseline": 657.33159072,
+      "current": 657.33159072,
+      "delta": 0.0,
+      "delta_pct": 0.0,
+      "status": "pass"
+    },
+    "clean_row_count": {
+      "baseline": 50000.0,
+      "current": 50000.0,
+      "delta": 0.0,
+      "delta_pct": 0.0,
+      "status": "pass"
+    },
+    "row_retention_rate": {
+      "baseline": 1.0,
+      "current": 1.0,
+      "delta": 0.0,
+      "delta_pct": 0.0,
+      "status": "pass"
+    }
+  },
+  "failed_metrics": []
+}

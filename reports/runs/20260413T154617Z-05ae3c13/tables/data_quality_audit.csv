@@ -1,0 +1,8 @@
+check,value
+row_count,50000
+null_values,0
+duplicated_order_id,0
+duplicated_order_product_date,0
+discount_out_of_range,0
+rating_out_of_range,0
+freshness_days,834

@@ -1,0 +1,118 @@
+{
+  "run_id": "20260413T154405Z-585643df",
+  "started_at_utc": "2026-04-13T15:44:05.671361+00:00",
+  "pipeline_version": "1.0.0",
+  "overall_status": "baseline_initialized",
+  "row_counts": {
+    "raw": 50000,
+    "clean": 50000,
+    "featured": 50000,
+    "alerts": 39
+  },
+  "quality_gates": {
+    "status": "pass",
+    "checks": [
+      {
+        "check": "row_count",
+        "status": "pass",
+        "value": 50000,
+        "threshold": "> 0",
+        "message": "dataset limpo nao pode ser vazio"
+      },
+      {
+        "check": "discount_percent_range",
+        "status": "pass",
+        "value": 0,
+        "threshold": "0 invalid rows",
+        "message": "discount_percent deve permanecer na faixa [0, 100]"
+      },
+      {
+        "check": "rating_range",
+        "status": "pass",
+        "value": 0,
+        "threshold": "0 invalid rows",
+        "message": "rating deve permanecer na faixa [0, 5]"
+      },
+      {
+        "check": "quantity_positive",
+        "status": "pass",
+        "value": 0,
+        "threshold": "0 invalid rows",
+        "message": "quantity_sold deve ser maior que zero"
+      },
+      {
+        "check": "price_positive",
+        "status": "pass",
+        "value": 0,
+        "threshold": "0 invalid rows",
+        "message": "price nao pode ser negativo"
+      },
+      {
+        "check": "business_key_duplicates",
+        "status": "pass",
+        "value": 0,
+        "threshold": "0 duplicate rows",
+        "message": "a chave de negocio order_id + product_id + order_date deve ser unica"
+      },
+      {
+        "check": "data_freshness_days",
+        "status": "pass",
+        "value": 834,
+        "threshold": "<= 2000 days",
+        "message": "o dataset nao deve estar obsoleto para o SLA definido"
+      }
+    ]
+  },
+  "metrics_regression": {
+    "status": "baseline_initialized",
+    "baseline_path": "C:\\Users\\samue\\PycharmProjects\\amazon-sales-analysis\\reports\\metrics\\product_metrics_baseline.json",
+    "tolerance_pct": 0.15,
+    "kpi_deltas": {},
+    "failed_metrics": []
+  },
+  "warehouse_validation": {
+    "status": "materialized",
+    "database_path": "C:\\Users\\samue\\PycharmProjects\\amazon-sales-analysis\\data\\warehouse\\amazon_sales.duckdb",
+    "table_name": "gold_commercial_performance",
+    "view_name": "vw_category_revenue",
+    "materialization_mode": "replace",
+    "validation_preview": [
+      {
+        "product_category": "Beauty",
+        "revenue": 5550626.23,
+        "orders": 8465,
+        "avg_discount_percent": 13.37
+      },
+      {
+        "product_category": "Books",
+        "revenue": 5484865.25,
+        "orders": 8327,
+        "avg_discount_percent": 13.34
+      },
+      {
+        "product_category": "Fashion",
+        "revenue": 5480124.26,
+        "orders": 8365,
+        "avg_discount_percent": 13.36
+      },
+      {
+        "product_category": "Home & Kitchen",
+        "revenue": 5473133.53,
+        "orders": 8258,
+        "avg_discount_percent": 13.31
+      },
+      {
+        "product_category": "Electronics",
+        "revenue": 5470594.95,
+        "orders": 8320,
+        "avg_discount_percent": 13.26
+      },
+      {
+        "product_category": "Sports",
+        "revenue": 5407235.31,
+        "orders": 8265,
+        "avg_discount_percent": 13.41
+      }
+    ]
+  }
+}

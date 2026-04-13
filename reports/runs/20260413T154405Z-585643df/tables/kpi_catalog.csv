@@ -1,0 +1,7 @@
+slug,name,description,business_question,formula
+total_revenue,Revenue total,Receita liquida capturada no periodo analisado.,Quanto a operacao comercial gerou de receita?,sum(total_revenue)
+avg_order_value,Ticket medio,Valor medio gerado por pedido.,Qual e o valor medio de cada pedido?,total_revenue / unique_orders
+category_revenue,Vendas por categoria,Concentracao de receita por categoria para priorizacao comercial.,Quais categorias lideram performance e quais exigem atencao?,sum(total_revenue) by product_category
+product_contribution,Contribuicao de produtos,Participacao dos produtos no revenue total.,Quais produtos sustentam o resultado comercial?,product_revenue / total_revenue
+growth_trend,Tendencia temporal,Evolucao mensal do revenue e sua variacao.,"A operacao esta acelerando, estavel ou desacelerando?",monthly_revenue and monthly_growth_rate
+performance_distribution,Distribuicao de performance,Perfil de dispersao do revenue por pedido para diagnostico de concentracao.,A performance esta pulverizada ou concentrada em poucos pedidos?,describe(total_revenue by order)

@@ -1,0 +1,8 @@
+check,status,value,threshold,message
+row_count,pass,50000,> 0,dataset limpo nao pode ser vazio
+discount_percent_range,pass,0,0 invalid rows,"discount_percent deve permanecer na faixa [0, 100]"
+rating_range,pass,0,0 invalid rows,"rating deve permanecer na faixa [0, 5]"
+quantity_positive,pass,0,0 invalid rows,quantity_sold deve ser maior que zero
+price_positive,pass,0,0 invalid rows,price nao pode ser negativo
+business_key_duplicates,pass,0,0 duplicate rows,a chave de negocio order_id + product_id + order_date deve ser unica
+data_freshness_days,pass,834,<= 2000 days,o dataset nao deve estar obsoleto para o SLA definido

@@ -1,0 +1,8 @@
+metric,value,unit
+total_revenue,32866579.536,currency
+avg_order_value,657.33159072,currency
+total_orders,50000.0,orders
+total_units,149970.0,units
+discount_leakage,5046525.004000008,currency
+net_revenue_retained,0.866892330099855,ratio
+avg_rating,2.9963159999999998,score

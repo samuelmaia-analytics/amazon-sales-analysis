@@ -1,0 +1,7 @@
+{
+  "status": "baseline_initialized",
+  "baseline_path": "C:\\Users\\samue\\PycharmProjects\\amazon-sales-analysis\\reports\\metrics\\product_metrics_baseline.json",
+  "tolerance_pct": 0.15,
+  "kpi_deltas": {},
+  "failed_metrics": []
+}

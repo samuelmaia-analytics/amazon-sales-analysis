@@ -1,0 +1,45 @@
+{
+  "status": "materialized",
+  "database_path": "C:\\Users\\samue\\PycharmProjects\\amazon-sales-analysis\\data\\warehouse\\amazon_sales.duckdb",
+  "table_name": "gold_commercial_performance",
+  "view_name": "vw_category_revenue",
+  "materialization_mode": "replace",
+  "validation_preview": [
+    {
+      "product_category": "Beauty",
+      "revenue": 5550626.23,
+      "orders": 8465,
+      "avg_discount_percent": 13.37
+    },
+    {
+      "product_category": "Books",
+      "revenue": 5484865.25,
+      "orders": 8327,
+      "avg_discount_percent": 13.34
+    },
+    {
+      "product_category": "Fashion",
+      "revenue": 5480124.26,
+      "orders": 8365,
+      "avg_discount_percent": 13.36
+    },
+    {
+      "product_category": "Home & Kitchen",
+      "revenue": 5473133.53,
+      "orders": 8258,
+      "avg_discount_percent": 13.31
+    },
+    {
+      "product_category": "Electronics",
+      "revenue": 5470594.95,
+      "orders": 8320,
+      "avg_discount_percent": 13.26
+    },
+    {
+      "product_category": "Sports",
+      "revenue": 5407235.31,
+      "orders": 8265,
+      "avg_discount_percent": 13.41
+    }
+  ]
+}
