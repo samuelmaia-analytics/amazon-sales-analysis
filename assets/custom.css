@@ -29,12 +29,18 @@
 }
 
 [data-testid="stAppViewContainer"] .main .block-container,
-[data-testid="stAppViewContainer"] .main .stMainBlockContainer {
+[data-testid="stAppViewContainer"] .main .stMainBlockContainer,
+[data-testid="stMainBlockContainer"],
+[data-testid="stAppViewBlockContainer"] {
     max-width: none;
     width: 100%;
     padding-top: 1.1rem;
     padding-left: clamp(1rem, 3vw, 2rem);
     padding-right: clamp(1rem, 3vw, 2rem);
+}
+
+[data-testid="stHorizontalBlock"] {
+    width: 100%;
 }
 
 .main-header {
@@ -168,8 +174,8 @@
 
 @media (min-width: 1201px) {
     [data-testid="stSidebar"] {
-        width: 300px !important;
-        min-width: 300px !important;
+        width: 260px !important;
+        min-width: 260px !important;
     }
 }
 
@@ -183,5 +189,15 @@
     [data-testid="stAppViewContainer"] .main .stMainBlockContainer {
         padding-left: 1rem;
         padding-right: 1rem;
+    }
+}
+
+@media (min-width: 1400px) {
+    [data-testid="stAppViewContainer"] .main .block-container,
+    [data-testid="stAppViewContainer"] .main .stMainBlockContainer,
+    [data-testid="stMainBlockContainer"],
+    [data-testid="stAppViewBlockContainer"] {
+        padding-left: 1.25rem;
+        padding-right: 1.25rem;
     }
 }
