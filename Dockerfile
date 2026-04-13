@@ -10,4 +10,4 @@ RUN pip install --no-cache-dir .
 
 EXPOSE 8501
 
-CMD ["streamlit", "run", "app/streamlit_app.py", "--server.address=0.0.0.0", "--server.port=8501"]
+CMD ["streamlit", "run", "streamlit_app.py", "--server.address=0.0.0.0", "--server.port=8501"]

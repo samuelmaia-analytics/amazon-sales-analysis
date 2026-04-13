@@ -94,7 +94,7 @@ Run service surfaces:
 
 ```bash
 uvicorn app.api:app --reload
-streamlit run app/streamlit_app.py
+streamlit run streamlit_app.py
 ```
 
 ## CLI Entry Points

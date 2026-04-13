@@ -38,7 +38,7 @@ graph LR
 PYTHONPATH=src python -m amazon_sales_analysis.cli.pipeline --retention-runs 60
 PYTHONPATH=src python -m amazon_sales_analysis.cli.warehouse --show-operational-summary
 uvicorn app.api:app --reload
-streamlit run app/streamlit_app.py
+streamlit run streamlit_app.py
 ```
 
 ## Fiabilidade Operacional

@@ -37,7 +37,7 @@ Goal: keep operational code paths explicit, make failures diagnosable, and keep 
 graph TD
     CLI[CLI\nsrc/.../cli] --> CORE[Core package\nsrc/amazon_sales_analysis]
     API[FastAPI\napp/api.py] --> CORE
-    DASH[Streamlit\napp/streamlit_app.py] --> CORE
+    DASH[Streamlit\nstreamlit_app.py] --> CORE
     SCRIPTS[scripts/] --> CLI
 
     CORE --> ING[ingestion]
@@ -68,7 +68,6 @@ Governance and automation:
 Delivery surfaces only:
 
 - API entry point
-- Streamlit entry point
 
 Rule: no core business logic here.
 
@@ -150,4 +149,3 @@ Rules:
 - lower coupling between delivery and domain logic
 - reproducible operational runs with clear lineage
 - maintainable package evolution without breaking callers
-
