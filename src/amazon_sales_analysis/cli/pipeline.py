@@ -128,7 +128,9 @@ def run(
             contract_version=CONTRACT_VERSION,
             output_path=run_contracts_dir / "sales_dataset.contract.json",
         )
-        publish_latest_artifact(contract_path, settings.contracts_dir / "sales_dataset.contract.json")
+        publish_latest_artifact(
+            contract_path, settings.contracts_dir / "sales_dataset.contract.json"
+        )
         logger.info("Data contract snapshot saved to: %s", contract_path)
 
         logger.info("[3/8] Materializing bronze layer and cleaning source data")
@@ -170,7 +172,9 @@ def run(
         settings.tables_dir.mkdir(parents=True, exist_ok=True)
         run_table_paths: dict[str, Path] = {}
         for table_name, table_df in tables.items():
-            run_table_path = write_dataframe_artifact(table_df, run_tables_dir / f"{table_name}.csv")
+            run_table_path = write_dataframe_artifact(
+                table_df, run_tables_dir / f"{table_name}.csv"
+            )
             publish_latest_artifact(run_table_path, settings.tables_dir / f"{table_name}.csv")
             run_table_paths[table_name] = run_table_path
         recommendations_run_path = write_dataframe_artifact(
@@ -293,7 +297,9 @@ def run(
         logger.info("Execution manifest saved to: %s", run_context.manifest_path)
         logger.info("Operational summary saved to: %s", operational_summary_path)
 
-        removed_runs = prune_pipeline_runs(settings.pipeline_runs_dir, keep_last_runs=retention_runs)
+        removed_runs = prune_pipeline_runs(
+            settings.pipeline_runs_dir, keep_last_runs=retention_runs
+        )
         if removed_runs:
             logger.info(
                 "Pipeline run retention applied. Removed %s obsolete run directories.",

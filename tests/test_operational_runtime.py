@@ -402,7 +402,9 @@ def test_pipeline_cli_main_orchestrates_pipeline_outputs(tmp_path, monkeypatch) 
     monkeypatch.setattr(
         pipeline_cli,
         "export_discount_spike_alerts",
-        lambda frame, output_path=None: _write_text_artifact(alerts_path, "product_category\nBeauty\n"),
+        lambda frame, output_path=None: _write_text_artifact(
+            alerts_path, "product_category\nBeauty\n"
+        ),
     )
 
     def fake_write_json_artifact(payload: dict[str, object], target: Path) -> Path:

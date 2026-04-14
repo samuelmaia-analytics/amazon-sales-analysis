@@ -101,7 +101,8 @@ def _build_local_fallback_operational_view(
 ) -> tuple[dict[str, object], list[dict[str, object]]]:
     quality_status = "pass" if (quality_table["status"] == "pass").all() else "fail"
     warehouse_available = bool(
-        settings.warehouse_db_path.exists() or any(settings.gold_data_dir.glob("*_commercial_mart.csv"))
+        settings.warehouse_db_path.exists()
+        or any(settings.gold_data_dir.glob("*_commercial_mart.csv"))
     )
 
     run_started_at = ""
@@ -141,7 +142,9 @@ def _build_local_fallback_operational_view(
     return summary, [run_record]
 
 
-def _apply_exec_chart_style(fig: go.Figure, *, yaxis_title: str = "", xaxis_title: str = "") -> go.Figure:
+def _apply_exec_chart_style(
+    fig: go.Figure, *, yaxis_title: str = "", xaxis_title: str = ""
+) -> go.Figure:
     fig.update_layout(
         template="plotly_white",
         paper_bgcolor="white",
@@ -209,7 +212,9 @@ def _business_filtered_frame(df: pd.DataFrame) -> pd.DataFrame:
 
     min_date = pd.to_datetime(df["order_date"], errors="coerce").min()
     max_date = pd.to_datetime(df["order_date"], errors="coerce").max()
-    default_dates = (min_date.date(), max_date.date()) if pd.notna(min_date) and pd.notna(max_date) else None
+    default_dates = (
+        (min_date.date(), max_date.date()) if pd.notna(min_date) and pd.notna(max_date) else None
+    )
     date_range = st.sidebar.date_input("Período", value=default_dates)
 
     filtered = df.copy()
@@ -246,14 +251,23 @@ def _kpi_block(df: pd.DataFrame) -> None:
             return 0.0
         return float(current_value - previous_value)
 
-    revenue_delta = delta(float(current["total_revenue"]), None if previous is None else float(previous["total_revenue"]))
-    aov_delta = delta(float(current["avg_order_value"]), None if previous is None else float(previous["avg_order_value"]))
+    revenue_delta = delta(
+        float(current["total_revenue"]),
+        None if previous is None else float(previous["total_revenue"]),
+    )
+    aov_delta = delta(
+        float(current["avg_order_value"]),
+        None if previous is None else float(previous["avg_order_value"]),
+    )
     nrr_delta_pct = (
         0.0
         if previous is None or float(previous["nrr"]) == 0
         else ((float(current["nrr"]) - float(previous["nrr"])) / float(previous["nrr"])) * 100
     )
-    leakage_delta = delta(float(current["discount_value"]), None if previous is None else float(previous["discount_value"]))
+    leakage_delta = delta(
+        float(current["discount_value"]),
+        None if previous is None else float(previous["discount_value"]),
+    )
 
     def _metric_card(title: str, value: str, delta_text: str, is_positive_good: bool = True) -> str:
         is_positive = delta_text.strip().startswith("+")
@@ -347,7 +361,9 @@ def _executive_tab(df: pd.DataFrame) -> None:
         )
         category_chart.update_traces(textposition="outside")
         category_chart.update_xaxes(tickprefix="$", separatethousands=True)
-        _apply_exec_chart_style(category_chart, xaxis_title="Receita (USD)", yaxis_title="Categoria")
+        _apply_exec_chart_style(
+            category_chart, xaxis_title="Receita (USD)", yaxis_title="Categoria"
+        )
         st.plotly_chart(category_chart, width="stretch")
 
     st.subheader("Ações Recomendadas")
@@ -387,13 +403,13 @@ def _risk_tab(df: pd.DataFrame) -> None:
 
     with right:
         product_mix = (
-        df.groupby("product_category", as_index=False)
-        .agg(
-            revenue=("total_revenue", "sum"),
-            orders=("order_id", "nunique"),
-            avg_discount=("discount_percent", "mean"),
-        )
-        .sort_values("revenue", ascending=False)
+            df.groupby("product_category", as_index=False)
+            .agg(
+                revenue=("total_revenue", "sum"),
+                orders=("order_id", "nunique"),
+                avg_discount=("discount_percent", "mean"),
+            )
+            .sort_values("revenue", ascending=False)
         )
         bubble = px.scatter(
             product_mix,
@@ -469,7 +485,9 @@ def _operations_tab(df: pd.DataFrame) -> None:
     )
 
     run_cols = st.columns(2)
-    latest_run_status = str(latest_run.get("status", "indisponível")) if latest_run else "indisponível"
+    latest_run_status = (
+        str(latest_run.get("status", "indisponível")) if latest_run else "indisponível"
+    )
     latest_run_id = str(latest_run.get("run_id", "n/a")) if latest_run else "n/a"
     latest_success_id = (
         str(latest_successful_run.get("run_id", "n/a")) if latest_successful_run else "n/a"
@@ -487,9 +505,13 @@ def _operations_tab(df: pd.DataFrame) -> None:
         if run_history:
             history = pd.DataFrame(run_history).copy()
             if "total_revenue" in history.columns:
-                history["total_revenue"] = history["total_revenue"].map(lambda v: format_currency(float(v)))
+                history["total_revenue"] = history["total_revenue"].map(
+                    lambda v: format_currency(float(v))
+                )
             if "avg_ticket" in history.columns:
-                history["avg_ticket"] = history["avg_ticket"].map(lambda v: format_currency(float(v)))
+                history["avg_ticket"] = history["avg_ticket"].map(
+                    lambda v: format_currency(float(v))
+                )
             st.dataframe(history, width="stretch", hide_index=True)
         else:
             st.info("Sem histórico disponível.")
@@ -497,11 +519,11 @@ def _operations_tab(df: pd.DataFrame) -> None:
     with right:
         st.markdown("**Drift dos últimos runs**")
         if run_comparison is None:
-            st.caption(
-                "Drift indisponível: são necessários ao menos dois runs materializados."
-            )
+            st.caption("Drift indisponível: são necessários ao menos dois runs materializados.")
             st.dataframe(
-                pd.DataFrame(columns=["metric", "latest", "previous", "delta", "delta_ratio", "severity"]),
+                pd.DataFrame(
+                    columns=["metric", "latest", "previous", "delta", "delta_ratio", "severity"]
+                ),
                 width="stretch",
                 hide_index=True,
             )
@@ -513,7 +535,9 @@ def _operations_tab(df: pd.DataFrame) -> None:
                 .rename(columns={"index": "metric"})
                 .sort_values("delta_ratio", ascending=False)
             )
-            drift_df["delta_ratio"] = drift_df["delta_ratio"].map(lambda v: format_percent(float(v)))
+            drift_df["delta_ratio"] = drift_df["delta_ratio"].map(
+                lambda v: format_percent(float(v))
+            )
             st.dataframe(drift_df, width="stretch", hide_index=True)
 
     st.markdown("**Validação de qualidade sobre recorte atual**")
@@ -522,11 +546,19 @@ def _operations_tab(df: pd.DataFrame) -> None:
     st.markdown("**Metadados de acesso analítico**")
     metadata_table = pd.DataFrame(
         [
-            {"campo": "warehouse_db_path", "valor": str(warehouse_metadata.get("warehouse_db_path", ""))},
-            {"campo": "warehouse_table", "valor": str(warehouse_metadata.get("warehouse_table", ""))},
+            {
+                "campo": "warehouse_db_path",
+                "valor": str(warehouse_metadata.get("warehouse_db_path", "")),
+            },
+            {
+                "campo": "warehouse_table",
+                "valor": str(warehouse_metadata.get("warehouse_table", "")),
+            },
             {
                 "campo": "duckdb_available",
-                "valor": "true" if bool(warehouse_metadata.get("duckdb_available", False)) else "false",
+                "valor": (
+                    "true" if bool(warehouse_metadata.get("duckdb_available", False)) else "false"
+                ),
             },
         ]
     )
@@ -568,17 +600,17 @@ def _catalog_tab(df: pd.DataFrame) -> None:
         )
         selected = catalog[catalog["slug"] == selected_slug].iloc[0]
         st.markdown(
-            
-                f"**KPI:** {selected['name']}  \n"
-                f"**Pergunta de negócio:** {selected['business_question']}  \n"
-                f"**Fórmula:** `{selected['formula']}`"
-            
+            f"**KPI:** {selected['name']}  \n"
+            f"**Pergunta de negócio:** {selected['business_question']}  \n"
+            f"**Fórmula:** `{selected['formula']}`"
         )
 
 
 def main() -> None:
     load_custom_css()
-    st.markdown("<div class='main-header'>Amazon Sales Executive Cockpit</div>", unsafe_allow_html=True)
+    st.markdown(
+        "<div class='main-header'>Amazon Sales Executive Cockpit</div>", unsafe_allow_html=True
+    )
     st.markdown(
         (
             "<div class='sub-header'>Painel executivo para decisões de receita, margem promocional "

@@ -1,40 +1,54 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Any
 
 import pandas as pd
 
 try:
     import pandera.pandas as pa
 except ModuleNotFoundError:  # pragma: no cover - exercised in environments without pandera
-    pa = None
+    pa = None  # type: ignore[assignment]
+
+pa_module: Any = pa
 
 
-if pa is not None:
-    sales_schema = pa.DataFrameSchema(
+if pa_module is not None:
+    sales_schema = pa_module.DataFrameSchema(
         {
-            "order_id": pa.Column(float, nullable=False, coerce=True),
-            "order_date": pa.Column(str, nullable=False, coerce=True),
-            "product_id": pa.Column(float, nullable=False, coerce=True),
-            "product_category": pa.Column(str, nullable=False, coerce=True),
-            "price": pa.Column(float, nullable=False, coerce=True, checks=pa.Check.ge(0)),
-            "discount_percent": pa.Column(
+            "order_id": pa_module.Column(float, nullable=False, coerce=True),
+            "order_date": pa_module.Column(str, nullable=False, coerce=True),
+            "product_id": pa_module.Column(float, nullable=False, coerce=True),
+            "product_category": pa_module.Column(str, nullable=False, coerce=True),
+            "price": pa_module.Column(
+                float, nullable=False, coerce=True, checks=pa_module.Check.ge(0)
+            ),
+            "discount_percent": pa_module.Column(
                 float,
                 nullable=False,
                 coerce=True,
-                checks=[pa.Check.ge(0), pa.Check.le(100)],
+                checks=[pa_module.Check.ge(0), pa_module.Check.le(100)],
             ),
-            "quantity_sold": pa.Column(float, nullable=False, coerce=True, checks=pa.Check.gt(0)),
-            "customer_region": pa.Column(str, nullable=True, coerce=True),
-            "payment_method": pa.Column(str, nullable=True, coerce=True),
-            "rating": pa.Column(
-                float, nullable=True, coerce=True, checks=[pa.Check.ge(0), pa.Check.le(5)]
+            "quantity_sold": pa_module.Column(
+                float, nullable=False, coerce=True, checks=pa_module.Check.gt(0)
             ),
-            "review_count": pa.Column(float, nullable=True, coerce=True, checks=pa.Check.ge(0)),
-            "discounted_price": pa.Column(
-                float, nullable=True, coerce=True, checks=pa.Check.ge(0)
+            "customer_region": pa_module.Column(str, nullable=True, coerce=True),
+            "payment_method": pa_module.Column(str, nullable=True, coerce=True),
+            "rating": pa_module.Column(
+                float,
+                nullable=True,
+                coerce=True,
+                checks=[pa_module.Check.ge(0), pa_module.Check.le(5)],
             ),
-            "total_revenue": pa.Column(float, nullable=True, coerce=True, checks=pa.Check.ge(0)),
+            "review_count": pa_module.Column(
+                float, nullable=True, coerce=True, checks=pa_module.Check.ge(0)
+            ),
+            "discounted_price": pa_module.Column(
+                float, nullable=True, coerce=True, checks=pa_module.Check.ge(0)
+            ),
+            "total_revenue": pa_module.Column(
+                float, nullable=True, coerce=True, checks=pa_module.Check.ge(0)
+            ),
         },
         strict=False,
         coerce=True,
