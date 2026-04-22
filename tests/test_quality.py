@@ -10,11 +10,15 @@ from amazon_sales_analysis.quality import (
 
 
 def _base_df() -> pd.DataFrame:
+    reference_date = pd.Timestamp.now(tz="UTC").normalize()
     return pd.DataFrame(
         {
             "order_id": [1, 2],
             "product_id": [10, 11],
-            "order_date": ["2026-03-01", "2026-03-02"],
+            "order_date": [
+                (reference_date - pd.Timedelta(days=2)).strftime("%Y-%m-%d"),
+                (reference_date - pd.Timedelta(days=1)).strftime("%Y-%m-%d"),
+            ],
             "discount_percent": [10.0, 20.0],
             "rating": [4.5, 3.8],
             "quantity_sold": [2, 1],

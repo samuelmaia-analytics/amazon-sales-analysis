@@ -81,7 +81,7 @@ def audit_data_quality(df: pd.DataFrame) -> pd.DataFrame:
     )
     max_order_date = pd.to_datetime(order_date_series, errors="coerce").max()
     freshness_days = (
-        int((pd.Timestamp.utcnow().tz_localize(None) - max_order_date).days)
+        int((pd.Timestamp.now(tz="UTC").tz_localize(None) - max_order_date).days)
         if pd.notna(max_order_date)
         else -1
     )

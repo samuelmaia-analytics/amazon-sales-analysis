@@ -116,7 +116,7 @@ def materialize_gold_mart(
         if materialization_mode == "append_history":
             history_df = df.copy()
             history_df["pipeline_run_id"] = run_id or "unknown"
-            history_df["materialized_at_utc"] = pd.Timestamp.utcnow().isoformat()
+            history_df["materialized_at_utc"] = pd.Timestamp.now(tz="UTC").isoformat()
             connection.register("history_df", history_df)
             connection.execute(
                 f"CREATE TABLE IF NOT EXISTS {WAREHOUSE_HISTORY_TABLE_NAME} "
