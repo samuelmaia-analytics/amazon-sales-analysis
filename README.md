@@ -225,3 +225,13 @@ CI runs the same gates on Python 3.12 and 3.13.
 ## License
 
 Apache License 2.0. See [LICENSE](LICENSE).
+
+## License
+
+This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0).
+
+To view a copy of this license, visit:
+https://creativecommons.org/licenses/by-nc/4.0/
+
+[![License: CC BY-NC 4.0](https://licensebuttons.net/l/by-nc/4.0/88x31.png)](https://creativecommons.org/licenses/by-nc/4.0/)
+
