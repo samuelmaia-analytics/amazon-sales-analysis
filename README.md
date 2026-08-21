@@ -1,179 +1,79 @@
 # Amazon Sales Analytics Platform
 
-Production-style analytics repository focused on commercial performance, operational reliability, and engineering clarity.
+Projeto de portfólio em **Data Analytics e Analytics Engineering** focado em desempenho comercial, qualidade de dados e confiabilidade operacional.
 
-This project is intentionally scoped as a local-first data platform: no fake cloud complexity, but strong fundamentals for pipeline execution, quality control, observability, and analytical serving.
+A proposta é transformar dados públicos de vendas em um fluxo analítico reproduzível, com camadas de dados, validações, métricas, histórico de execuções e consumo por API, CLI e Streamlit.
 
-## Language Guides
+## O problema
 
-- International: [README.md](README.md)
-- PT-BR: [docs/README.pt-BR.md](docs/README.pt-BR.md)
-- PT-PT: [docs/README.pt-PT.md](docs/README.pt-PT.md)
-- Repository structure: [docs/REPOSITORY_STRUCTURE.md](docs/REPOSITORY_STRUCTURE.md)
-- Contribution standards: [CONTRIBUTING.md](CONTRIBUTING.md)
+Análises comerciais recorrentes precisam responder perguntas como:
 
-## Business Scope
+- Quais categorias e produtos concentram receita?
+- Onde há maior pressão de descontos?
+- As métricas permanecem estáveis entre execuções?
+- Os dados estão confiáveis antes de serem publicados?
+- Existe rastreabilidade suficiente para investigar uma execução?
 
-The platform supports recurring commercial decisions:
+## A solução
 
-- revenue concentration by category and product
-- discount leakage and promotional pressure
-- KPI drift between runs
-- data quality and contract compliance before serving outputs
-- operational traceability for each execution
-
-## Architecture at a Glance
-
-```mermaid
-graph LR
-    A[Raw Ingestion] --> B[Contract + Schema Validation]
-    B --> C[Bronze Snapshot]
-    C --> D[Cleaning + Normalization]
-    D --> E[Quality Gates]
-    E --> F[Silver Snapshot]
-    F --> G[Feature Engineering + Sales Modeling]
-    G --> H[Gold Snapshot + DuckDB Materialization]
-    H --> I[KPI Package + Regression]
-    I --> J[Manifest + Run Status + Operational Summary]
-    J --> K[Latest Snapshots for API/CLI/Streamlit]
+```text
+Raw
+ → validação de contrato e schema
+ → Bronze
+ → limpeza e normalização
+ → Data Quality
+ → Silver
+ → modelagem de vendas
+ → Gold / DuckDB
+ → KPIs e regressão
+ → API / CLI / Streamlit
 ```
 
-Core package layout:
+## Principais entregas
 
-- `ingestion/`: raw acquisition and landing reuse
-- `transformations/`: cleaning, normalization, curated outputs
-- `validation/`: contracts, schema checks, quality gates
-- `observability/`: logging, metrics package, KPI regression
-- `serving/`: warehouse, run history, operational summary
-- `pipelines/`: runtime context, manifest/status/artifact helpers
+- Pipeline local-first com camadas Bronze, Silver e Gold.
+- Contratos e validações de schema antes do processamento.
+- Quality Gates sobre dados curados.
+- Pacote de KPIs comerciais e comparação entre execuções.
+- Materialização analítica em DuckDB.
+- Histórico de runs, manifests e status operacionais.
+- API para métricas, qualidade, alertas e histórico do pipeline.
+- Dashboard Streamlit para consumo dos resultados.
+- Testes automatizados e validação em CI.
 
-## Data and Artifact Model
+## Valor demonstrado
 
-Primary runtime paths (configurable):
+O projeto mostra como evoluir uma análise de vendas além de um notebook isolado: métricas ficam reproduzíveis, execuções deixam evidências, inconsistências podem ser detectadas antes do consumo e diferentes interfaces reutilizam a mesma lógica analítica.
 
-- `data/raw/`
-- `data/bronze/`
-- `data/silver/`
-- `data/gold/`
-- `data/warehouse/`
-- `data/processed/`
-- `reports/tables/`
-- `reports/metrics/`
-- `reports/runs/`
+## Stack
 
-Execution guarantees:
+**Dados:** Python, pandas, SQL, DuckDB  
+**Serving:** Streamlit, FastAPI, CLI  
+**Qualidade:** contratos, quality gates, pytest, mypy, Ruff, Black, Isort  
+**Engenharia:** GitHub Actions, manifests, run history, atomic writes
 
-- deterministic `run_id` folders under `reports/runs/<run_id>/`
-- immutable run-scoped artifacts (contracts, metrics, tables, status, manifest)
-- stable `latest` snapshots for service consumers
-- retention policy for old runs (`--retention-runs`)
-- atomic writes for critical CSV/JSON outputs
+## Fonte de dados
 
-## Dataset Source
+Dataset público do Kaggle: `aliiihussain/amazon-sales-dataset`.
 
-- Kaggle dataset: `aliiihussain/amazon-sales-dataset`
-- Retrieval package: `kagglehub`
-- Raw landing: `data/raw/amazon_sales/amazon_sales_dataset.csv`
+## Como revisar este projeto em 5 minutos
 
-## Quickstart
+1. Leia o problema e o fluxo acima.
+2. Explore `src/amazon_sales_analysis/` para a lógica principal.
+3. Veja as validações e contratos de dados.
+4. Execute o pipeline e consulte o histórico de runs.
+5. Abra o Streamlit ou a API para visualizar os outputs publicados.
+
+## Execução rápida
 
 ```bash
 python -m pip install -e .[dev]
-pre-commit install
-cp .env.example .env
-```
-
-Run pipeline:
-
-```bash
-# preferred in this repo context
 PYTHONPATH=src python -m amazon_sales_analysis.cli.pipeline --retention-runs 60
-```
-
-Run service surfaces:
-
-```bash
 uvicorn app.api:app --reload
 streamlit run streamlit_app.py
 ```
 
-## CLI Entry Points
-
-```bash
-amazon-sales-pipeline --force-download --fail-on-kpi-regression --retention-runs 60
-amazon-sales-alerts
-amazon-sales-scenario
-amazon-sales-warehouse --show-run-history
-amazon-sales-warehouse --compare-latest-runs
-amazon-sales-warehouse --show-operational-summary
-```
-
-If shell entry points are unavailable in your environment, use:
-
-```bash
-PYTHONPATH=src python -m amazon_sales_analysis.cli.pipeline
-PYTHONPATH=src python -m amazon_sales_analysis.cli.warehouse --show-operational-summary
-```
-
-## API Surface
-
-- `GET /health`
-- `GET /health/ready`
-- `GET /metrics/summary`
-- `GET /metrics/opportunities`
-- `GET /metrics/monthly-trend`
-- `GET /insights/executive`
-- `GET /recommendations/actionable`
-- `GET /quality/gates`
-- `GET /kpis/catalog`
-- `GET /alerts/discount-spikes`
-- `GET /warehouse/category-revenue`
-- `GET /pipeline/runs`
-- `GET /pipeline/runs/compare-latest`
-- `GET /operations/latest`
-
-## Reliability and Operations
-
-### Run Lifecycle
-
-1. Ensure source availability (reuse or download).
-2. Validate raw contract and schema.
-3. Build bronze/silver/gold layers.
-4. Enforce quality gates on curated data.
-5. Compute KPI package and regression checks.
-6. Persist manifest, run status, and operational summary.
-7. Publish latest snapshots for consumption.
-8. Apply run retention policy.
-
-### Common Operational Cases
-
-- **Freshness gate fails**:
-  Increase `AMAZON_SALES_MAX_DATA_STALENESS_DAYS` for historical datasets in local/demo contexts.
-- **No drift panel in dashboard**:
-  Requires at least two successful runs.
-- **No console script command found**:
-  Use module execution with `PYTHONPATH=src`.
-
-## Configuration
-
-Environment values are documented in `.env.example`.
-
-Key operational variables:
-
-- `AMAZON_SALES_ENV`
-- `AMAZON_SALES_LOG_LEVEL`
-- `AMAZON_SALES_ENABLE_DOWNLOAD`
-- `AMAZON_SALES_MAX_DATA_STALENESS_DAYS`
-- `AMAZON_SALES_KPI_REGRESSION_TOLERANCE_PCT`
-- `AMAZON_SALES_WAREHOUSE_MATERIALIZATION_MODE`
-- `AMAZON_SALES_DATA_DIR`
-- `AMAZON_SALES_REPORTS_DIR`
-- `AMAZON_SALES_CONTRACTS_DIR`
-- `AMAZON_SALES_KAGGLE_DATASET`
-
-## Quality Gates
-
-Required local validation before PR:
+## Qualidade
 
 ```bash
 make quality
@@ -181,57 +81,26 @@ make test
 make build-check
 ```
 
-Equivalent commands:
+## Limitações
 
-- `black --check .`
-- `isort --check-only .`
-- `ruff check .`
-- `mypy src tests app alerts scripts`
-- `pytest -q`
-- `python -m build --sdist --wheel`
+- Arquitetura intencionalmente local-first.
+- Sem orquestrador externo obrigatório.
+- Sem armazenamento cloud obrigatório.
+- Observabilidade centralizada e estratégia incremental completa estão fora do escopo atual.
 
-CI runs the same gates on Python 3.12 and 3.13.
+## Documentação
 
-## Governance and LGPD
+- [Estrutura do repositório](docs/REPOSITORY_STRUCTURE.md)
+- [Guia PT-BR](docs/README.pt-BR.md)
+- [Contribuição](CONTRIBUTING.md)
 
-- repository examples/tests use synthetic fixtures
-- credentials are externalized via environment files
-- only operational/aggregated analytics artifacts are persisted by default
-- run manifest and status provide traceability for audits
-- retention is explicit and configurable by run count
+## Autor
 
-## Engineering Decisions
+Samuel Maia — Analista de Dados | Analytics Engineer
 
-- Local-first orchestration, explicit and inspectable.
-- DuckDB optional; fallback behavior remains functional.
-- Thin API/CLI/dashboard layers reusing core package logic.
-- Compatibility shims preserved for import stability during package evolution.
+- LinkedIn: https://www.linkedin.com/in/samuelmaia-analytics/
+- GitHub: https://github.com/samuelmaia-analytics
 
-## Trade-offs
+## Licença
 
-- no external scheduler/orchestrator
-- no centralized telemetry backend
-- no cloud object storage metadata layer
-- no full incremental warehouse strategy yet
-
-## Documentation
-
-- [CONTRIBUTING.md](CONTRIBUTING.md)
-- [docs/REPOSITORY_STRUCTURE.md](docs/REPOSITORY_STRUCTURE.md)
-- [docs/README.en.md](docs/README.en.md)
-- [docs/README.pt-BR.md](docs/README.pt-BR.md)
-- [docs/README.pt-PT.md](docs/README.pt-PT.md)
-
-## License
-
-Apache License 2.0. See [LICENSE](LICENSE).
-
-## License
-
-This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0).
-
-To view a copy of this license, visit:
-https://creativecommons.org/licenses/by-nc/4.0/
-
-[![License: CC BY-NC 4.0](https://licensebuttons.net/l/by-nc/4.0/88x31.png)](https://creativecommons.org/licenses/by-nc/4.0/)
-
+Consulte o arquivo [LICENSE](LICENSE).
