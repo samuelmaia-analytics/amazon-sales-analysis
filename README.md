@@ -1,5 +1,7 @@
 # Amazon Sales Analytics Platform
 
+> **Projeto legado de portfólio.** Este repositório foi preservado como histórico técnico. O portfólio principal atual está concentrado em [Governed Analytics Platform](https://github.com/samuelmaia-analytics/Governed-Analytics-Platform), Central de Automação e Operações e [AWS Serverless Access Counter](https://github.com/samuelmaia-analytics/aws-serverless-access-counter).
+
 Projeto de portfólio em **Data Analytics e Analytics Engineering** focado em desempenho comercial, qualidade de dados e confiabilidade operacional.
 
 A proposta é transformar dados públicos de vendas em um fluxo analítico reproduzível, com camadas de dados, validações, métricas, histórico de execuções e consumo por API, CLI e Streamlit.
